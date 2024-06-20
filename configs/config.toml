@@ -1,1 +1,2 @@
 conf = "luban_examples/luban.conf"
+target = "all"

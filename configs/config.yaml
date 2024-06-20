@@ -1,0 +1,7 @@
+conf:
+  luban_examples/luban.conf
+target:
+  all
+code_targets:
+  - java-json
+  - go-bin

@@ -1,0 +1,11 @@
+conf = "luban_examples/luban.conf"
+target = "all"
+code_targets = ["java-json", "go-bin"]
+
+xargs = [
+    "a=1",
+    "b=2"
+]
+
+[Log]
+level = "debug"

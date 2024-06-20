@@ -39,6 +39,11 @@ build:
 	./cmd/luban
 
 
+.PHONY: run
+# run
+run:
+	go run ./cmd/luban --conf=luban_examples/luban.conf -t=all
+
 # show help
 help:
 	@echo ''

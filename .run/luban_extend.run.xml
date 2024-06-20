@@ -1,0 +1,11 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="luban_extend" type="GoApplicationRunConfiguration" factoryName="Go Application">
+    <module name="luban-go" />
+    <working_directory value="$PROJECT_DIR$" />
+    <kind value="PACKAGE" />
+    <package value="github.com/zhangga/luban/luban_extend" />
+    <directory value="$PROJECT_DIR$" />
+    <filePath value="$PROJECT_DIR$/luban_extend/main.go" />
+    <method v="2" />
+  </configuration>
+</component>

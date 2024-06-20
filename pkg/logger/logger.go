@@ -3,62 +3,59 @@ package logger
 import (
 	"errors"
 	"github.com/natefinch/lumberjack"
+	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
 var ErrMissingLevel = errors.New("missing level")
 
+// DefaultLogger 使用默认配置创建的 Logger
 func DefaultLogger() (Logger, error) {
 	return InitLogger(defaultConfig)
 }
 
+// InitLoggerByFile 通过配置文件初始化 Logger
 func InitLoggerByFile(configFile string) (Logger, error) {
-	var config *Config
-	err := loadConfig[Config](configFile, config)
-	if err != nil {
-		return nil, err
-	}
-	return InitLogger(config)
+	return InitLoggerByViper(nil, configFile)
 }
 
-func InitLogger(cfg *Config) (Logger, error) {
-	if cfg == nil {
-		cfg = defaultConfig
+// InitLoggerByViper 通过 Flag&配置文件 初始化 Logger
+func InitLoggerByViper(viper *viper.Viper, configFile string) (Logger, error) {
+	cfg, err := loadConfig(viper, configFile, "log")
+	if err != nil {
+		return nil, err
 	}
+	return InitLogger(cfg)
+}
 
-	enc, err := buildEncoder(cfg.zapConfig)
+// InitLogger 初始化 Logger
+func InitLogger(cfg LogConfig) (Logger, error) {
+	zapConfig, fileConfig := cfg.build()
+	enc, err := buildEncoder(zapConfig)
 	if err != nil {
 		return nil, err
 	}
-	sink, errSink, err := openSinks(cfg.zapConfig)
+	sink, errSink, err := openSinks(zapConfig)
 	if err != nil {
 		return nil, err
 	}
-	if cfg.zapConfig.Level == (zap.AtomicLevel{}) {
+	if zapConfig.Level == (zap.AtomicLevel{}) {
 		return nil, ErrMissingLevel
 	}
 
 	cores := []zapcore.Core{
-		zapcore.NewCore(enc, sink, cfg.zapConfig.Level),
+		zapcore.NewCore(enc, sink, zapConfig.Level),
 	}
-	var fileLog *lumberjack.Logger
-	if cfg.fileConfig != nil {
-		fileLog = &lumberjack.Logger{
-			Filename:   cfg.fileConfig.Filename,
-			MaxSize:    cfg.fileConfig.MaxSize,
-			MaxBackups: cfg.fileConfig.MaxBackups,
-			MaxAge:     cfg.fileConfig.MaxAge,
-			Compress:   cfg.fileConfig.Compress,
-		}
-		cores = append(cores, zapcore.NewCore(enc, zapcore.AddSync(fileLog), cfg.zapConfig.Level))
+	if fileConfig != nil {
+		cores = append(cores, zapcore.NewCore(enc, zapcore.AddSync(fileConfig), zapConfig.Level))
 	}
 
-	zapLog := zap.New(zapcore.NewTee(cores...), buildOptions(cfg.zapConfig, errSink)...)
+	zapLog := zap.New(zapcore.NewTee(cores...), buildOptions(zapConfig, errSink)...)
 
 	l := &logger{
 		SugaredLogger: zapLog.Sugar(),
-		fileLogger:    fileLog,
+		fileLogger:    fileConfig,
 	}
 	return l, nil
 }

@@ -11,36 +11,37 @@ var (
 )
 
 // loadConfig 读取配置
-func loadConfig[T any](filePath string, config *T) error {
-	var (
-		err   error
-		viper = viper.New()
-	)
+func loadConfig(vip *viper.Viper, filePath string, prefix string) (LogConfig, error) {
+	if vip == nil {
+		vip = viper.New()
+	}
 	// 从配置文件读取
-	if err = loadConfigByFile(filePath, viper); err != nil {
-		return err
+	if err := loadConfigByFile(filePath, vip); err != nil {
+		return LogConfig{}, err
 	}
 
-	// 反序列化配置
-	if err = viper.Unmarshal(config); err != nil {
-		return err
+	var err error
+	config := defaultConfig
+	if len(prefix) > 0 {
+		err = vip.Sub(prefix).UnmarshalExact(&config)
+	} else {
+		err = vip.UnmarshalExact(&config)
 	}
-
-	return viper.Sub("log").UnmarshalExact(config)
+	return config, err
 }
 
 // loadConfigByFile 从配置文件中读取
-func loadConfigByFile(filePath string, viper *viper.Viper) error {
+func loadConfigByFile(filePath string, vip *viper.Viper) error {
 	// 未指定配置文件
 	if len(filePath) == 0 {
-		return errFilePathIsEmpty
+		return nil
 	}
 
 	_, err := os.Stat(filePath)
 	// 文件存在
 	if err == nil || os.IsExist(err) {
-		viper.SetConfigFile(filePath)
-		return viper.ReadInConfig()
+		vip.SetConfigFile(filePath)
+		return vip.ReadInConfig()
 	}
 	return err
 }
