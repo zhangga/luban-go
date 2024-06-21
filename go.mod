@@ -3,6 +3,7 @@ module github.com/zhangga/luban
 go 1.22
 
 require (
+	github.com/modern-go/reflect2 v1.0.2
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0

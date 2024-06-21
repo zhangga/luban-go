@@ -2,13 +2,17 @@ package core
 
 import (
 	"fmt"
+	"github.com/zhangga/luban/core/manager"
+	"github.com/zhangga/luban/core/options"
+	"github.com/zhangga/luban/core/pipeline"
 	"github.com/zhangga/luban/pkg/logger"
 	"strings"
 )
 
+// SimpleLauncher 启动器
 type SimpleLauncher struct {
 	logger  logger.Logger
-	options map[string]string
+	options map[string]string // xargs参数
 }
 
 func NewSimpleLauncher(logger logger.Logger) *SimpleLauncher {
@@ -17,8 +21,27 @@ func NewSimpleLauncher(logger logger.Logger) *SimpleLauncher {
 	}
 }
 
-func (s *SimpleLauncher) Start(xargs ...string) {
-	s.options = parseOptions(xargs...)
+func (s *SimpleLauncher) Start(opts options.CommandOptions) {
+	s.options = parseOptions(opts.Xargs...)
+	s.initManagers()
+
+	pipeMgr, ok := manager.Get[*pipeline.Manager]()
+	if !ok {
+		panic("pipeline manager not found")
+	}
+	pipe := pipeMgr.CreatePipeline(opts.Pipeline)
+	pipe.Run(pipeline.CreateArguments(opts))
+}
+
+// initManagers 初始化管理器
+func (s *SimpleLauncher) initManagers() {
+	manager.Traverse(func(mgr manager.IManager) {
+		mgr.Init(s.logger)
+	})
+	//s.schemaMgr = schema.NewManager(s.logger)
+	//s.schemaMgr.Init()
+	//s.pipelineMgr = pipeline.NewManager(s.logger)
+	//s.pipelineMgr.Init()
 }
 
 func parseOptions(xargs ...string) map[string]string {

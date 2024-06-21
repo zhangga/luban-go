@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/zhangga/luban/core"
+	"github.com/zhangga/luban/core/options"
 	"github.com/zhangga/luban/pkg/logger"
 	"github.com/zhangga/luban/pkg/version"
 )
@@ -26,8 +27,8 @@ var (
 
 	// configPath 启动配置文件
 	configPath string
-	// options 启动配置
-	options CommandOptions
+	// opts 启动配置
+	opts options.CommandOptions
 )
 
 // 绑定启动参数
@@ -36,24 +37,24 @@ func init() {
 	RootCmd.Flags().StringVar(&configPath, FlagNameConfigPath, "configs/config.full.toml", "luban boostrap config file path")
 
 	// 命令行参数绑定
-	RootCmd.Flags().StringVarP(&options.SchemaCollector, "schema_collector", "s", "default", "schema collector name")
-	RootCmd.Flags().StringVar(&options.Conf, "conf", "", "luban.conf file path")
-	RootCmd.Flags().StringVarP(&options.Target, "target", "t", "", "target name")
-	RootCmd.Flags().StringSliceVarP(&options.CodeTargets, "code_targets", "c", nil, "code target name list")
-	RootCmd.Flags().StringSliceVarP(&options.DataTargets, "data_targets", "d", nil, "data target name list")
-	RootCmd.Flags().StringVarP(&options.Pipeline, "pipeline", "p", "default", "pipeline name")
-	RootCmd.Flags().BoolVarP(&options.ForceLoadTableDatas, "force_load_table_datas", "f", false, "force load table datas when not any dataTarget")
-	RootCmd.Flags().StringSliceVarP(&options.IncludeTags, "include_tags", "i", nil, "include tags")
-	RootCmd.Flags().StringSliceVarP(&options.ExcludeTags, "exclude_tags", "e", nil, "exclude tags")
-	RootCmd.Flags().StringSliceVarP(&options.OutputTables, "output_tables", "o", nil, "output tables")
-	RootCmd.Flags().StringVar(&options.TimeZone, "time_zone", "", "time zone")
-	RootCmd.Flags().StringSliceVar(&options.CustomTemplateDirs, "custom_template_dirs", nil, "custom template dirs")
-	RootCmd.Flags().BoolVar(&options.ValidationFailAsError, "validation_fail_as_error", false, "validation fail as error")
-	RootCmd.Flags().StringSliceVarP(&options.Xargs, "xargs", "x", nil, "args like -x a=1 -x b=2")
-	RootCmd.Flags().BoolVarP(&options.Verbose, "verbose", "v", false, "verbose")
+	RootCmd.Flags().StringVarP(&opts.SchemaCollector, "schema_collector", "s", "default", "schema collector name")
+	RootCmd.Flags().StringVar(&opts.Conf, "conf", "", "luban.conf file path")
+	RootCmd.Flags().StringVarP(&opts.Target, "target", "t", "", "target name")
+	RootCmd.Flags().StringSliceVarP(&opts.CodeTargets, "code_targets", "c", nil, "code target name list")
+	RootCmd.Flags().StringSliceVarP(&opts.DataTargets, "data_targets", "d", nil, "data target name list")
+	RootCmd.Flags().StringVarP(&opts.Pipeline, "pipeline", "p", "default", "pipeline name")
+	RootCmd.Flags().BoolVarP(&opts.ForceLoadTableDatas, "force_load_table_datas", "f", false, "force load table datas when not any dataTarget")
+	RootCmd.Flags().StringSliceVarP(&opts.IncludeTags, "include_tags", "i", nil, "include tags")
+	RootCmd.Flags().StringSliceVarP(&opts.ExcludeTags, "exclude_tags", "e", nil, "exclude tags")
+	RootCmd.Flags().StringSliceVarP(&opts.OutputTables, "output_tables", "o", nil, "output tables")
+	RootCmd.Flags().StringVar(&opts.TimeZone, "time_zone", "", "time zone")
+	RootCmd.Flags().StringSliceVar(&opts.CustomTemplateDirs, "custom_template_dirs", nil, "custom template dirs")
+	RootCmd.Flags().BoolVar(&opts.ValidationFailAsError, "validation_fail_as_error", false, "validation fail as error")
+	RootCmd.Flags().StringSliceVarP(&opts.Xargs, "xargs", "x", nil, "args like -x a=1 -x b=2")
+	RootCmd.Flags().BoolVarP(&opts.Verbose, "verbose", "v", false, "verbose")
 
 	// 日志参数
-	RootCmd.Flags().StringVarP(&options.LogConfig, "log_config", "l", "", "log config file. [Log].xxx")
+	RootCmd.Flags().StringVarP(&opts.LogConfig, "log_config", "l", "", "log config file. [Log].xxx")
 }
 
 // 绑定命令行参数
@@ -68,20 +69,21 @@ func init() {
 
 func run(cmd *cobra.Command, args []string) {
 	// 解析启动参数
-	if err := loadCommandOptions(configPath, &options); err != nil {
+	if err := loadCommandOptions(configPath, &opts); err != nil {
 		panic(err)
 	}
 
 	// 初始化日志
-	log, err := logger.InitLoggerByViper(rootViper, options.LogConfig)
+	log, err := logger.InitLoggerByViper(rootViper, opts.LogConfig)
 	if err != nil {
 		panic(err)
 	}
 	defer log.Flush()
 
 	log.Info(copyright)
-	log.Infof("boostrap command options: %+v", options)
+	log.Infof("boostrap command options: %+v", opts)
 
+	// 启动
 	launcher := core.NewSimpleLauncher(log)
-	launcher.Start(options.Xargs...)
+	launcher.Start(opts)
 }
