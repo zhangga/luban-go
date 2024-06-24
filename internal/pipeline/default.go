@@ -1,7 +1,10 @@
 package pipeline
 
 import (
+	"errors"
+	"github.com/zhangga/luban/core/manager"
 	"github.com/zhangga/luban/core/pipeline"
+	"github.com/zhangga/luban/core/schema"
 	"github.com/zhangga/luban/pkg/logger"
 )
 
@@ -33,5 +36,12 @@ func (p *DefaultPipeline) Run(args pipeline.Arguments) error {
 }
 
 func (p *DefaultPipeline) loadSchema() error {
+	schemaMgr, ok := manager.Get[*schema.Manager]()
+	if !ok {
+		return errors.New("schema manager not found")
+	}
+
+	schemaCollector := schemaMgr.CreateSchemaCollector(p.args.SchemaCollector)
+	schemaCollector.Load()
 	return nil
 }
