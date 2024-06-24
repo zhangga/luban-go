@@ -13,12 +13,11 @@ type Manager struct {
 	logger logger.Logger
 }
 
-func (m *Manager) Init(log logger.Logger) {
-	m.logger = log
+func (m *Manager) Init(logger logger.Logger) {
+	m.logger = logger
 }
 
 func (m *Manager) PostInit() {
-
 }
 
 func (m *Manager) CreatePipeline(name string) IPipeline {
@@ -26,5 +25,5 @@ func (m *Manager) CreatePipeline(name string) IPipeline {
 	if creator == nil {
 		panic(fmt.Errorf("pipeline %s not found", name))
 	}
-	return creator()
+	return creator(m.logger)
 }

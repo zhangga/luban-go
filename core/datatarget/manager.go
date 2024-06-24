@@ -1,4 +1,4 @@
-package schema
+package datatarget
 
 import (
 	"github.com/zhangga/luban/core/manager"

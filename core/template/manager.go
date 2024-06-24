@@ -1,4 +1,4 @@
-package schema
+package template
 
 import (
 	"github.com/zhangga/luban/core/manager"

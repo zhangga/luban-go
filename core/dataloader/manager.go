@@ -1,4 +1,4 @@
-package schema
+package dataloader
 
 import (
 	"github.com/zhangga/luban/core/manager"

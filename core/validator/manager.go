@@ -1,4 +1,4 @@
-package schema
+package validator
 
 import (
 	"github.com/zhangga/luban/core/manager"

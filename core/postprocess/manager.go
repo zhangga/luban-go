@@ -1,4 +1,4 @@
-package schema
+package postprocess
 
 import (
 	"github.com/zhangga/luban/core/manager"

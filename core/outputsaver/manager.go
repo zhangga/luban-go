@@ -1,4 +1,4 @@
-package schema
+package outputsaver
 
 import (
 	"github.com/zhangga/luban/core/manager"

@@ -1,4 +1,4 @@
-package schema
+package codetarget
 
 import (
 	"github.com/zhangga/luban/core/manager"
@@ -16,4 +16,5 @@ func (m *Manager) Init(logger logger.Logger) {
 }
 
 func (m *Manager) PostInit() {
+
 }

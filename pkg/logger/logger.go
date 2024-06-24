@@ -10,11 +10,6 @@ import (
 
 var ErrMissingLevel = errors.New("missing level")
 
-// DefaultLogger 使用默认配置创建的 Logger
-func DefaultLogger() (Logger, error) {
-	return InitLogger(defaultConfig)
-}
-
 // InitLoggerByFile 通过配置文件初始化 Logger
 func InitLoggerByFile(configFile string) (Logger, error) {
 	return InitLoggerByViper(nil, configFile)

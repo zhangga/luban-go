@@ -1,11 +1,13 @@
 package pipeline
 
-import "sync"
+import (
+	"github.com/zhangga/luban/pkg/logger"
+	"sync"
+)
 
 // Creator IPipeline构造器
-type Creator func() IPipeline
+type Creator func(logger logger.Logger) IPipeline
 
-使用type注册，参考manager
 var (
 	creators = make(map[string]Creator)
 	locker   sync.RWMutex
@@ -14,7 +16,7 @@ var (
 func Register(creator Creator) {
 	locker.Lock()
 	defer locker.Unlock()
-	t := creator()
+	t := creator(logger.Default())
 	if _, ok := creators[t.Name()]; ok {
 		panic("register duplicate pipeline creator, name: " + t.Name())
 	}

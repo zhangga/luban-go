@@ -31,6 +31,8 @@ func (s *SimpleLauncher) Start(opts options.CommandOptions) {
 	}
 	pipe := pipeMgr.CreatePipeline(opts.Pipeline)
 	pipe.Run(pipeline.CreateArguments(opts))
+
+	s.logger.Info("bye~")
 }
 
 // initManagers 初始化管理器
@@ -38,10 +40,9 @@ func (s *SimpleLauncher) initManagers() {
 	manager.Traverse(func(mgr manager.IManager) {
 		mgr.Init(s.logger)
 	})
-	//s.schemaMgr = schema.NewManager(s.logger)
-	//s.schemaMgr.Init()
-	//s.pipelineMgr = pipeline.NewManager(s.logger)
-	//s.pipelineMgr.Init()
+	manager.Traverse(func(mgr manager.IManager) {
+		mgr.PostInit()
+	})
 }
 
 func parseOptions(xargs ...string) map[string]string {

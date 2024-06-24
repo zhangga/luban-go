@@ -1,4 +1,4 @@
-package schema
+package l10n
 
 import (
 	"github.com/zhangga/luban/core/manager"

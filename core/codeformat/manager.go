@@ -1,4 +1,4 @@
-package schema
+package codeformat
 
 import (
 	"github.com/zhangga/luban/core/manager"
