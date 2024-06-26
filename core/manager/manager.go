@@ -57,6 +57,14 @@ func Get[T IManager]() (T, bool) {
 	return instance, false
 }
 
+func MustGet[T IManager]() T {
+	manager, ok := Get[T]()
+	if !ok {
+		panic(fmt.Sprintf("manager: %s not found", reflect.TypeOf(manager).Elem().String()))
+	}
+	return manager
+}
+
 func Traverse(f func(m IManager)) {
 	locker.RLock()
 	defer locker.RUnlock()

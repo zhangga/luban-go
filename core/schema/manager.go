@@ -1,7 +1,9 @@
 package schema
 
 import (
+	"fmt"
 	"github.com/zhangga/luban/core/manager"
+	"github.com/zhangga/luban/core/pipeline"
 	"github.com/zhangga/luban/pkg/logger"
 )
 
@@ -16,4 +18,21 @@ func (m *Manager) Init(logger logger.Logger) {
 }
 
 func (m *Manager) PostInit() {
+}
+
+func (m *Manager) CreateSchemaCollector(name string, pipeline pipeline.IPipeline) ISchemaCollector {
+	creator := getCollectorCreator(name)
+	if creator == nil {
+		panic(fmt.Errorf("SchemaCollector %s not found", name))
+	}
+	return creator(m.logger, pipeline)
+}
+
+func (m *Manager) CreateSchemaLoader(extName, dataType string, schemaCollector ISchemaCollector) ISchemaLoader {
+	loaderInfo := getLoaderInfo(dataType, extName)
+	if loaderInfo == nil {
+		panic(fmt.Errorf("SchemaLoader type:%s, extName:%s not found", dataType, extName))
+	}
+	loader := loaderInfo.Creator(m.logger, dataType, schemaCollector)
+	return loader
 }

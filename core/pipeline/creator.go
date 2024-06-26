@@ -18,7 +18,7 @@ func Register(creator Creator) {
 	defer locker.Unlock()
 	t := creator(logger.Default())
 	if _, ok := creators[t.Name()]; ok {
-		panic("register duplicate pipeline creator, name: " + t.Name())
+		panic("register duplicate IPipeline creator, name: " + t.Name())
 	}
 	creators[t.Name()] = creator
 }

@@ -1,4 +1,4 @@
-package rawref
+package rawrefs
 
 type RawGroup struct {
 	IsDefault bool     `json:"is_default"`

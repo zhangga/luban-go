@@ -14,6 +14,7 @@ import (
 	"github.com/zhangga/luban/core/template"
 	"github.com/zhangga/luban/core/validator"
 	pipeline2 "github.com/zhangga/luban/internal/pipeline"
+	schema2 "github.com/zhangga/luban/internal/schema"
 )
 
 // init 注册管理器
@@ -31,7 +32,18 @@ func init() {
 	manager.Register[*l10n.Manager]()
 }
 
-// init 注册管道
+// init 注册pipeline
 func init() {
 	pipeline.Register(pipeline2.NewDefaultPipeline)
+}
+
+// init 注册schema
+func init() {
+	// 注册collector
+	schema.RegisterCollector(schema2.NewDefaultSchemaCollector)
+	// 注册loader
+	schema.RegisterLoader(schema2.NewXmlSchemaLoader, 0, "", ".xml")
+	schema.RegisterLoader(schema2.NewExcelSchemaLoader, 0, "table", ".xlsx", ".xls", ".xlsm", ".csv")
+	schema.RegisterLoader(schema2.NewExcelSchemaLoader, 0, "bean", ".xlsx", ".xls", ".xlsm", ".csv")
+	schema.RegisterLoader(schema2.NewExcelSchemaLoader, 0, "enum", ".xlsx", ".xls", ".xlsm", ".csv")
 }

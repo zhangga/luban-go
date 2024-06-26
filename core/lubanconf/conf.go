@@ -1,10 +1,20 @@
 package lubanconf
 
+// Conf luban.conf中的配置数据
 type Conf struct {
+	DataDir     string       `json:"dataDir"`
 	Groups      []Group      `json:"groups"`
 	SchemaFiles []SchemaFile `json:"schemaFiles"`
-	DataDir     string       `json:"dataDir"`
 	Targets     []Target     `json:"targets"`
+}
+
+// LubanConfig Load解析后的数据
+type LubanConfig struct {
+	ConfigFileName string
+	InputDataDir   string
+	Groups         []Group
+	Targets        []Target
+	Imports        []SchemaFile
 }
 
 type Group struct {

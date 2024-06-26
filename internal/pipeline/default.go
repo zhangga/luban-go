@@ -15,7 +15,7 @@ var _ pipeline.IPipeline = (*DefaultPipeline)(nil)
 type DefaultPipeline struct {
 	logger logger.Logger
 	args   pipeline.Arguments
-	config *lubanconf.Conf
+	config *lubanconf.LubanConfig
 }
 
 func NewDefaultPipeline(logger logger.Logger) pipeline.IPipeline {
@@ -38,8 +38,9 @@ func (p *DefaultPipeline) Run(args pipeline.Arguments) error {
 }
 
 func (p *DefaultPipeline) loadSchema() error {
-	var err error
 	confLoader := lubanconf.NewGlobalConfigLoader(p.logger)
+	var err error
+	// 加载luban配置文件
 	if p.config, err = confLoader.Load(p.args.ConfFile); err != nil {
 		p.logger.Errorf("load config file %s, failed: %s", p.args.ConfFile, err)
 		return err
@@ -50,8 +51,8 @@ func (p *DefaultPipeline) loadSchema() error {
 		return errors.New("schema manager not found")
 	}
 
-	_ = schemaMgr
-	//schemaCollector := schemaMgr.CreateSchemaCollector(p.args.SchemaCollector)
-	//schemaCollector.Load()
+	p.logger.Infof("load schema.collector: %s, path: %s", p.args.SchemaCollector, p.args.ConfFile)
+	schemaCollector := schemaMgr.CreateSchemaCollector(p.args.SchemaCollector, p)
+	schemaCollector.Load(p.config)
 	return nil
 }

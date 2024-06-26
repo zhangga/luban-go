@@ -1,4 +1,4 @@
-package rawref
+package rawrefs
 
 type SchemaFileInfo struct {
 	FileName string `json:"file_name"`
