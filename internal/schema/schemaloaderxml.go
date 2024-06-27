@@ -16,9 +16,7 @@ type ITagHandler func(ele *etree.Element)
 
 // XmlSchemaLoader xml文件加载器
 type XmlSchemaLoader struct {
-	logger         logger.Logger
-	dataType       string
-	collector      schema.ISchemaCollector
+	schemaLoaderBase
 	fileName       string
 	tagHandlers    map[string]ITagHandler
 	namespaceStack []string
@@ -26,9 +24,11 @@ type XmlSchemaLoader struct {
 
 func NewXmlSchemaLoader(logger logger.Logger, dataType string, collector schema.ISchemaCollector) schema.ISchemaLoader {
 	l := &XmlSchemaLoader{
-		logger:      logger,
-		dataType:    dataType,
-		collector:   collector,
+		schemaLoaderBase: schemaLoaderBase{
+			logger:    logger,
+			dataType:  dataType,
+			collector: collector,
+		},
 		tagHandlers: map[string]ITagHandler{},
 	}
 	l.tagHandlers["module"] = l.AddModule
@@ -212,10 +212,6 @@ func (l *XmlSchemaLoader) AddBean(ele *etree.Element) {
 	l.AddBeanByParent(ele, "")
 }
 
-func (l *XmlSchemaLoader) AddRefGroup(ele *etree.Element) {
-
-}
-
 func (l *XmlSchemaLoader) AddBeanByParent(ele *etree.Element, parent string) {
 	validAttrKeys(l.fileName, ele, beanOptionalAttrs, beanRequiredAttrs)
 	l.tryUpdateParent(ele, &parent)
@@ -257,6 +253,34 @@ func (l *XmlSchemaLoader) AddBeanByParent(ele *etree.Element, parent string) {
 	for _, child := range childBeans {
 		l.AddBeanByParent(child, rawBean.FullName)
 	}
+}
+
+const (
+	groupKeyName = "name"
+	groupKeyRef  = "ref"
+)
+
+var (
+	groupRequiredAttrs = []string{groupKeyName, groupKeyRef}
+)
+
+func (l *XmlSchemaLoader) AddRefGroup(ele *etree.Element) {
+	validAttrKeys(l.fileName, ele, nil, groupRequiredAttrs)
+
+	refSplits := strings.FieldsFunc(getRequiredAttr(l.fileName, ele, groupKeyRef), func(r rune) bool {
+		return r == ',' || r == ';' || r == '|'
+	})
+	var refs []string
+	for _, ref := range refSplits {
+		if r := strings.TrimSpace(ref); len(r) > 0 {
+			refs = append(refs, r)
+		}
+	}
+	rawRefGroup := &rawrefs.RawRefGroup{
+		Name: getRequiredAttr(l.fileName, ele, groupKeyName),
+		Refs: refs,
+	}
+	l.collector.AddRefGroup(rawRefGroup)
 }
 
 func (l *XmlSchemaLoader) CurNameSpace() string {

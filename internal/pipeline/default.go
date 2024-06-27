@@ -37,6 +37,10 @@ func (p *DefaultPipeline) Run(args pipeline.Arguments) error {
 	return nil
 }
 
+func (p *DefaultPipeline) Args() pipeline.Arguments {
+	return p.args
+}
+
 func (p *DefaultPipeline) loadSchema() error {
 	confLoader := lubanconf.NewGlobalConfigLoader(p.logger)
 	var err error

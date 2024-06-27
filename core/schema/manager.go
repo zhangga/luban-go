@@ -29,10 +29,18 @@ func (m *Manager) CreateSchemaCollector(name string, pipeline pipeline.IPipeline
 }
 
 func (m *Manager) CreateSchemaLoader(extName, dataType string, schemaCollector ISchemaCollector) ISchemaLoader {
-	loaderInfo := getLoaderInfo(dataType, extName)
+	loaderInfo := getSchemaLoaderInfo(dataType, extName)
 	if loaderInfo == nil {
 		panic(fmt.Errorf("SchemaLoader type:%s, extName:%s not found", dataType, extName))
 	}
 	loader := loaderInfo.Creator(m.logger, dataType, schemaCollector)
 	return loader
+}
+
+func (m *Manager) CreateBeanLoader(name string, collector ISchemaCollector) IBeanSchemaLoader {
+	creator := getBeanLoaderCreator(name)
+	if creator == nil {
+		panic(fmt.Errorf("BeanLoader %s not found", name))
+	}
+	return creator(m.logger, collector)
 }

@@ -17,3 +17,8 @@ type ISchemaCollector interface {
 type ISchemaLoader interface {
 	Load(fileName string)
 }
+
+type IBeanSchemaLoader interface {
+	Name() string
+	Load(fileName, beanFullName string) refs.UnimplementedBean
+}

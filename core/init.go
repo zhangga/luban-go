@@ -41,9 +41,11 @@ func init() {
 func init() {
 	// 注册collector
 	schema.RegisterCollector(schema2.NewDefaultSchemaCollector)
-	// 注册loader
-	schema.RegisterLoader(schema2.NewXmlSchemaLoader, 0, "", ".xml")
-	schema.RegisterLoader(schema2.NewExcelSchemaLoader, 0, "table", ".xlsx", ".xls", ".xlsm", ".csv")
-	schema.RegisterLoader(schema2.NewExcelSchemaLoader, 0, "bean", ".xlsx", ".xls", ".xlsm", ".csv")
-	schema.RegisterLoader(schema2.NewExcelSchemaLoader, 0, "enum", ".xlsx", ".xls", ".xlsm", ".csv")
+	// 注册schema loader
+	schema.RegisterSchemaLoader(schema2.NewXmlSchemaLoader, 0, "", ".xml")
+	schema.RegisterSchemaLoader(schema2.NewExcelSchemaLoader, 0, "table", ".xlsx", ".xls", ".xlsm", ".csv")
+	schema.RegisterSchemaLoader(schema2.NewExcelSchemaLoader, 0, "bean", ".xlsx", ".xls", ".xlsm", ".csv")
+	schema.RegisterSchemaLoader(schema2.NewExcelSchemaLoader, 0, "enum", ".xlsx", ".xls", ".xlsm", ".csv")
+	// 注册bean loader
+	schema.RegisterBeanLoaderCreator(schema2.NewBeanSchemaFromExcelHeaderLoader)
 }

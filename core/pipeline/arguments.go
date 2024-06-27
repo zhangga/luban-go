@@ -18,7 +18,7 @@ type Arguments struct {
 	ConfFile            string
 	OutputTables        []string
 	TimeZone            string
-	CustomArgs          map[string]string
+	CustomOpts          map[string]string // 自定义参数
 }
 
 func CreateArguments(opts options.CommandOptions) Arguments {
@@ -34,7 +34,39 @@ func CreateArguments(opts options.CommandOptions) Arguments {
 		ConfFile:            opts.Conf,
 		OutputTables:        opts.OutputTables,
 		TimeZone:            opts.TimeZone,
-		CustomArgs:          options,
+		CustomOpts:          options,
+	}
+}
+
+func (args Arguments) GetOptionOrDefault(namespace, name, defaultValue string, useGlobalIfNotExits bool) string {
+	if val, ok := args.TryGetOption(namespace, name, useGlobalIfNotExits); ok {
+		return val
+	}
+	return defaultValue
+}
+
+func (args Arguments) TryGetOption(namespace, name string, useGlobalIfNotExits bool) (string, bool) {
+	var fullName string
+	for {
+		if len(namespace) == 0 {
+			fullName = name
+		} else {
+			fullName = namespace + "." + name
+		}
+
+		if val, ok := args.CustomOpts[fullName]; ok {
+			return val, true
+		}
+
+		if len(namespace) == 0 || !useGlobalIfNotExits {
+			return "", false
+		}
+
+		if idx := strings.LastIndex(namespace, "."); idx == -1 {
+			namespace = ""
+		} else {
+			namespace = namespace[:idx]
+		}
 	}
 }
 

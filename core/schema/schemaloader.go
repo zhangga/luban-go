@@ -19,7 +19,7 @@ var (
 	loaderLocker sync.RWMutex
 )
 
-func RegisterLoader(creator LoaderCreator, priority int, dataType string, extNames ...string) {
+func RegisterSchemaLoader(creator LoaderCreator, priority int, dataType string, extNames ...string) {
 	loaderLocker.Lock()
 	defer loaderLocker.Unlock()
 	for _, extName := range extNames {
@@ -35,7 +35,7 @@ func RegisterLoader(creator LoaderCreator, priority int, dataType string, extNam
 	}
 }
 
-func getLoaderInfo(dataType, extName string) *LoaderInfo {
+func getSchemaLoaderInfo(dataType, extName string) *LoaderInfo {
 	locker.RLock()
 	defer locker.RUnlock()
 	key := getLoaderKey(dataType, extName)
