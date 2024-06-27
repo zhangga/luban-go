@@ -1,12 +1,8 @@
 package rawrefs
 
-type EnumItem struct {
-	Name    string
-	Alias   string
-	Value   string
-	Comment string
-	Tags    map[string]string
-}
+import "github.com/zhangga/luban/core/refs"
+
+var _ refs.UnimplementedEnum = (*RawEnum)(nil)
 
 type RawEnum struct {
 	Namespace      string
@@ -19,4 +15,14 @@ type RawEnum struct {
 	Items          []EnumItem
 	Groups         []string
 	TypeMappers    []TypeMapper
+}
+
+func (e RawEnum) MustEmbedUnimplementedEnum() {}
+
+type EnumItem struct {
+	Name    string
+	Alias   string
+	Value   string
+	Comment string
+	Tags    map[string]string
 }

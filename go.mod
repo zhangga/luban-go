@@ -3,6 +3,7 @@ module github.com/zhangga/luban
 go 1.22
 
 require (
+	github.com/beevik/etree v1.4.0
 	github.com/bytedance/sonic v1.11.9
 	github.com/json-iterator/go v1.1.12
 	github.com/modern-go/reflect2 v1.0.2
@@ -14,7 +15,6 @@ require (
 
 require (
 	github.com/BurntSushi/toml v1.4.0 // indirect
-	github.com/beevik/etree v1.4.0 // indirect
 	github.com/bytedance/sonic/loader v0.1.1 // indirect
 	github.com/cloudwego/base64x v0.1.4 // indirect
 	github.com/cloudwego/iasm v0.2.0 // indirect

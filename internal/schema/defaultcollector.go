@@ -13,6 +13,7 @@ var _ schema.ISchemaCollector = (*DefaultSchemaCollector)(nil)
 
 // DefaultSchemaCollector 默认SchemaCollector
 type DefaultSchemaCollector struct {
+	CollectorBase
 	logger   logger.Logger
 	pipeline pipeline.IPipeline
 	config   *lubanconf.LubanConfig

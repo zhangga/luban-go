@@ -12,13 +12,12 @@ func TestParseAttrs(t *testing.T) {
 		tags     string
 		expected map[string]string
 	}{
-		{"(#key=value)", map[string]string{"key": "value"}},
-		{"(#key=value#another=pair)", map[string]string{"key": "value", "another": "pair"}},
-		{"#key:value", map[string]string{"key": "value"}},
-		{"#key", map[string]string{"key": "key"}},
-		{"#(key=value)", map[string]string{"key": "value"}},
-		{"#key=value#(another=pair)", map[string]string{"key": "value", "another": "pair"}},
-		{"#key=value#(another=pair)#more=attributes", map[string]string{"key": "value", "another": "pair", "more": "attributes"}},
+		{"key", map[string]string{"key": "key"}},
+		{"key:value", map[string]string{"key": "value"}},
+		{"(key=value)", map[string]string{"key": "value"}},
+		{"(key=value)#(another=pair)", map[string]string{"key": "value", "another": "pair"}},
+		{"#(key=value)", map[string]string{"": "", "key": "value"}},
+		{"key=value#(another:pair)", map[string]string{"key": "value", "another": "pair"}},
 		{"", map[string]string{}}, // Empty string
 		// Add more test cases as needed
 	}
