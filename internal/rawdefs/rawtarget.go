@@ -1,4 +1,4 @@
-package rawrefs
+package rawdefs
 
 type RawTarget struct {
 	Name      string   `json:"name"`

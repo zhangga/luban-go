@@ -1,13 +1,15 @@
-package rawrefs
+package rawdefs
 
-import "github.com/zhangga/luban/core/refs"
+import (
+	"github.com/zhangga/luban/core/refs"
+	"github.com/zhangga/luban/internal/utils"
+)
 
 var _ refs.UnimplementedEnum = (*RawEnum)(nil)
 
 type RawEnum struct {
 	Namespace      string
 	Name           string
-	FullName       string
 	IsFlags        bool
 	IsUniqueItemId bool
 	Comment        string
@@ -17,7 +19,11 @@ type RawEnum struct {
 	TypeMappers    []TypeMapper
 }
 
-func (e RawEnum) MustEmbedUnimplementedEnum() {}
+func (e *RawEnum) MustEmbedUnimplementedEnum() {}
+
+func (e *RawEnum) FullName() string {
+	return utils.MakeFullName(e.Namespace, e.Name)
+}
 
 type EnumItem struct {
 	Name    string

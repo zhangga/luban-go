@@ -1,4 +1,4 @@
-package rawrefs
+package rawdefs
 
 type TypeMapper struct {
 	Targets     []string

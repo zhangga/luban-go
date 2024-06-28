@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"errors"
+	"fmt"
 	"github.com/zhangga/luban/core/lubanconf"
 	"github.com/zhangga/luban/core/manager"
 	"github.com/zhangga/luban/core/pipeline"
@@ -30,6 +31,7 @@ func (p *DefaultPipeline) Name() string {
 
 func (p *DefaultPipeline) Run(args pipeline.Arguments) error {
 	p.args = args
+	p.loadLubanConfig()
 
 	if err := p.loadSchema(); err != nil {
 		return err
@@ -41,15 +43,21 @@ func (p *DefaultPipeline) Args() pipeline.Arguments {
 	return p.args
 }
 
-func (p *DefaultPipeline) loadSchema() error {
-	confLoader := lubanconf.NewGlobalConfigLoader(p.logger)
-	var err error
-	// 加载luban配置文件
-	if p.config, err = confLoader.Load(p.args.ConfFile); err != nil {
-		p.logger.Errorf("load config file %s, failed: %s", p.args.ConfFile, err)
-		return err
-	}
+func (p *DefaultPipeline) Config() *lubanconf.LubanConfig {
+	return p.config
+}
 
+func (p *DefaultPipeline) loadLubanConfig() {
+	confLoader := lubanconf.NewGlobalConfigLoader(p.logger)
+	// 加载luban配置文件
+	if config, err := confLoader.Load(p.args.ConfFile); err != nil {
+		panic(fmt.Errorf("load config file %s, failed: %w", p.args.ConfFile, err))
+	} else {
+		p.config = config
+	}
+}
+
+func (p *DefaultPipeline) loadSchema() error {
 	schemaMgr, ok := manager.Get[*schema.Manager]()
 	if !ok {
 		return errors.New("schema manager not found")
@@ -57,6 +65,6 @@ func (p *DefaultPipeline) loadSchema() error {
 
 	p.logger.Infof("load schema.collector: %s, path: %s", p.args.SchemaCollector, p.args.ConfFile)
 	schemaCollector := schemaMgr.CreateSchemaCollector(p.args.SchemaCollector, p)
-	schemaCollector.Load(p.config)
+	schemaCollector.Load()
 	return nil
 }

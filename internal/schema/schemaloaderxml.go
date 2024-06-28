@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/beevik/etree"
 	"github.com/zhangga/luban/core/schema"
-	"github.com/zhangga/luban/internal/rawrefs"
+	"github.com/zhangga/luban/internal/rawdefs"
 	"github.com/zhangga/luban/internal/utils"
 	"github.com/zhangga/luban/pkg/logger"
 	"strings"
@@ -99,7 +99,7 @@ var (
 func (l *XmlSchemaLoader) AddEnum(ele *etree.Element) {
 	validAttrKeys(l.fileName, ele, enumOptionalAttrs, enumRequiredAttrs)
 
-	rawEnum := &rawrefs.RawEnum{
+	rawEnum := &rawdefs.RawEnum{
 		Name:           getRequiredAttr(l.fileName, ele, enumKeyName),
 		Namespace:      l.CurNameSpace(),
 		Comment:        getOptionalAttr(ele, enumKeyComment),
@@ -108,13 +108,12 @@ func (l *XmlSchemaLoader) AddEnum(ele *etree.Element) {
 		IsUniqueItemId: getOptionalBoolAttr(ele, enumKeyUnique, true),
 		Groups:         createGroups(getOptionalAttr(ele, enumKeyGroup)),
 	}
-	rawEnum.FullName = utils.MakeFullName(rawEnum.Namespace, rawEnum.Name)
 
 	for _, itemEle := range ele.ChildElements() {
 		switch itemEle.Tag {
 		case "var":
 			validAttrKeys(l.fileName, itemEle, enumItemOptionalAttrs, enumItemRequiredAttrs)
-			rawEnum.Items = append(rawEnum.Items, rawrefs.EnumItem{
+			rawEnum.Items = append(rawEnum.Items, rawdefs.EnumItem{
 				Name:    getRequiredAttr(l.fileName, itemEle, enumItemKeyName),
 				Alias:   getOptionalAttr(itemEle, enumItemKeyAlias),
 				Value:   getOptionalAttr(itemEle, enumItemKeyValue),
@@ -122,13 +121,13 @@ func (l *XmlSchemaLoader) AddEnum(ele *etree.Element) {
 				Tags:    utils.ParseAttrs(getOptionalAttr(itemEle, enumItemKeyTags)),
 			})
 		case "mapper":
-			rawEnum.TypeMappers = append(rawEnum.TypeMappers, createTypeMapper(itemEle, l.fileName, rawEnum.FullName))
+			rawEnum.TypeMappers = append(rawEnum.TypeMappers, createTypeMapper(itemEle, l.fileName, rawEnum.FullName()))
 		default:
 			panic(fmt.Errorf("xml定义文件: %s, enum: %s, 不支持的tag: %s", l.fileName, rawEnum.Name, itemEle.Tag))
 		}
 	}
 	l.collector.AddEnum(rawEnum)
-	l.logger.Debugf("load enum: %s", rawEnum.FullName)
+	l.logger.Debugf("load enum: %s", rawEnum.FullName())
 }
 
 const (
@@ -163,7 +162,7 @@ func (l *XmlSchemaLoader) AddTable(ele *etree.Element) {
 	mode := getOptionalAttr(ele, tableKeyMode)
 	tags := getOptionalAttr(ele, tableKeyTags)
 	output := getOptionalAttr(ele, tableKeyOutput)
-	table := &rawrefs.RawTable{
+	table := &rawdefs.RawTable{
 		Name:               name,
 		Namespace:          module,
 		ValueType:          valueType,
@@ -171,7 +170,7 @@ func (l *XmlSchemaLoader) AddTable(ele *etree.Element) {
 		Index:              index,
 		Groups:             createGroups(group),
 		Comment:            comment,
-		Mode:               rawrefs.ConvertTableMode(l.fileName, name, mode, index),
+		Mode:               rawdefs.ConvertTableMode(l.fileName, name, mode, index),
 		Tags:               utils.ParseAttrs(tags),
 		OutputFile:         output,
 	}
@@ -215,7 +214,7 @@ func (l *XmlSchemaLoader) AddBean(ele *etree.Element) {
 func (l *XmlSchemaLoader) AddBeanByParent(ele *etree.Element, parent string) {
 	validAttrKeys(l.fileName, ele, beanOptionalAttrs, beanRequiredAttrs)
 	l.tryUpdateParent(ele, &parent)
-	rawBean := &rawrefs.RawBean{
+	rawBean := &rawdefs.RawBean{
 		Name:        getRequiredAttr(l.fileName, ele, beanKeyName),
 		Namespace:   l.CurNameSpace(),
 		Parent:      parent,
@@ -226,7 +225,6 @@ func (l *XmlSchemaLoader) AddBeanByParent(ele *etree.Element, parent string) {
 		Tags:        utils.ParseAttrs(getOptionalAttr(ele, beanKeyTags)),
 		Groups:      createGroups(getOptionalAttr(ele, beanKeyGroup)),
 	}
-	rawBean.FullName = utils.MakeFullName(rawBean.Namespace, rawBean.Name)
 
 	var childBeans []*etree.Element
 	defineAnyChildBean := false
@@ -234,24 +232,24 @@ func (l *XmlSchemaLoader) AddBeanByParent(ele *etree.Element, parent string) {
 		switch itemEle.Tag {
 		case "var":
 			if defineAnyChildBean {
-				panic(fmt.Errorf("xml定义文件: %s, bean: %s 的多态子bean必须在所有成员字段 <var> 之后定义", l.fileName, rawBean.FullName))
+				panic(fmt.Errorf("xml定义文件: %s, bean: %s 的多态子bean必须在所有成员字段 <var> 之后定义", l.fileName, rawBean.FullName()))
 			}
 			field := createFieldByElement(itemEle, l.fileName)
 			rawBean.Fields = append(rawBean.Fields, field)
 		case "mapper":
-			rawBean.TypeMappers = append(rawBean.TypeMappers, createTypeMapper(itemEle, l.fileName, rawBean.FullName))
+			rawBean.TypeMappers = append(rawBean.TypeMappers, createTypeMapper(itemEle, l.fileName, rawBean.FullName()))
 		case "bean":
 			defineAnyChildBean = true
 			childBeans = append(childBeans, itemEle)
 		default:
-			panic(fmt.Errorf("xml定义文件: %s, bean: %s, 不支持的tag: %s", l.fileName, rawBean.FullName, itemEle.Tag))
+			panic(fmt.Errorf("xml定义文件: %s, bean: %s, 不支持的tag: %s", l.fileName, rawBean.FullName(), itemEle.Tag))
 		}
 	}
 	l.collector.AddBean(rawBean)
-	l.logger.Debugf("load bean: %s", rawBean.FullName)
+	l.logger.Debugf("load bean: %s", rawBean.FullName())
 
 	for _, child := range childBeans {
-		l.AddBeanByParent(child, rawBean.FullName)
+		l.AddBeanByParent(child, rawBean.FullName())
 	}
 }
 
@@ -276,7 +274,7 @@ func (l *XmlSchemaLoader) AddRefGroup(ele *etree.Element) {
 			refs = append(refs, r)
 		}
 	}
-	rawRefGroup := &rawrefs.RawRefGroup{
+	rawRefGroup := &rawdefs.RawRefGroup{
 		Name: getRequiredAttr(l.fileName, ele, groupKeyName),
 		Refs: refs,
 	}
@@ -386,7 +384,7 @@ var (
 )
 
 // createFieldByElement 创建字段
-func createFieldByElement(ele *etree.Element, fileName string) rawrefs.RawField {
+func createFieldByElement(ele *etree.Element, fileName string) rawdefs.RawField {
 	validAttrKeys(fileName, ele, fieldOptionalAttrs, fieldRequiredAttrs)
 	name := getRequiredAttr(fileName, ele, fieldKeyName)
 	typeStr := getRequiredAttr(fileName, ele, fieldKeyType)
@@ -396,8 +394,8 @@ func createFieldByElement(ele *etree.Element, fileName string) rawrefs.RawField 
 	return createField(fileName, name, typeStr, group, comment, tags, false)
 }
 
-func createField(fileName, name, typeStr, group, comment, tags string, ignoreNameValidation bool) rawrefs.RawField {
-	field := rawrefs.RawField{
+func createField(fileName, name, typeStr, group, comment, tags string, ignoreNameValidation bool) rawdefs.RawField {
+	field := rawdefs.RawField{
 		Name:              name,
 		Groups:            createGroups(group),
 		Comment:           comment,
@@ -416,7 +414,7 @@ const (
 )
 
 // createTypeMapper 创建类型映射
-func createTypeMapper(ele *etree.Element, fileName, fullName string) rawrefs.TypeMapper {
+func createTypeMapper(ele *etree.Element, fileName, fullName string) rawdefs.TypeMapper {
 	target := getRequiredAttr(fileName, ele, enumItemMapperKeyTarget)
 	targets := strings.FieldsFunc(target, func(c rune) bool {
 		return c == ',' || c == ';' || c == '|'
@@ -435,7 +433,7 @@ func createTypeMapper(ele *etree.Element, fileName, fullName string) rawrefs.Typ
 		opts[key] = value
 	}
 
-	return rawrefs.TypeMapper{
+	return rawdefs.TypeMapper{
 		Targets:     targets,
 		CodeTargets: codeTargets,
 		Options:     opts,

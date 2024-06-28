@@ -1,13 +1,15 @@
-package rawrefs
+package rawdefs
 
-import "github.com/zhangga/luban/core/refs"
+import (
+	"github.com/zhangga/luban/core/refs"
+	"github.com/zhangga/luban/internal/utils"
+)
 
 var _ refs.UnimplementedBean = (*RawBean)(nil)
 
 type RawBean struct {
 	Namespace   string
 	Name        string
-	FullName    string
 	Parent      string
 	IsValueType bool
 	Comment     string
@@ -19,4 +21,8 @@ type RawBean struct {
 	TypeMappers []TypeMapper
 }
 
-func (r RawBean) MustEmbedUnimplementedBean() {}
+func (r *RawBean) MustEmbedUnimplementedBean() {}
+
+func (r *RawBean) FullName() string {
+	return utils.MakeFullName(r.Namespace, r.Name)
+}

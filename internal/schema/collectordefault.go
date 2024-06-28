@@ -1,7 +1,6 @@
 package schema
 
 import (
-	"github.com/zhangga/luban/core/lubanconf"
 	"github.com/zhangga/luban/core/manager"
 	"github.com/zhangga/luban/core/pipeline"
 	"github.com/zhangga/luban/core/schema"
@@ -17,7 +16,6 @@ type DefaultSchemaCollector struct {
 	CollectorBase
 	logger   logger.Logger
 	pipeline pipeline.IPipeline
-	config   *lubanconf.LubanConfig
 }
 
 func NewDefaultSchemaCollector(logger logger.Logger, pipeline pipeline.IPipeline) schema.ISchemaCollector {
@@ -31,11 +29,14 @@ func (s *DefaultSchemaCollector) Name() string {
 	return "default"
 }
 
+func (s *DefaultSchemaCollector) Pipeline() pipeline.IPipeline {
+	return s.pipeline
+}
+
 // Load 加载所有的schema
-func (s *DefaultSchemaCollector) Load(config *lubanconf.LubanConfig) {
-	s.config = config
+func (s *DefaultSchemaCollector) Load() {
 	// schema loader
-	for _, importFile := range s.config.Imports {
+	for _, importFile := range s.pipeline.Config().Imports {
 		s.logger.Debugf("import schema file: %s, type: %s", importFile.FileName, importFile.Type)
 		schemaMgr := manager.MustGet[*schema.Manager]()
 		schemaLoader := schemaMgr.CreateSchemaLoader(filepath.Ext(importFile.FileName), importFile.Type, s)
@@ -60,7 +61,7 @@ func (s *DefaultSchemaCollector) loadTableValueTypeSchemasFromFile() {
 			fileName := t.InputFiles[0]
 			schemaMgr := manager.MustGet[*schema.Manager]()
 			beanLoader := schemaMgr.CreateBeanLoader(beanSchemaLoaderName, s)
-			fullPath := filepath.Join(s.config.InputDataDir, fileName)
+			fullPath := filepath.Join(s.pipeline.Config().InputDataDir, fileName)
 			bean := beanLoader.Load(fullPath, t.ValueType)
 			s.AddBean(bean)
 		}()

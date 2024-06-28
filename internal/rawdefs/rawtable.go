@@ -1,4 +1,4 @@
-package rawrefs
+package rawdefs
 
 import (
 	"fmt"

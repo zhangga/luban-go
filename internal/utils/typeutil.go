@@ -18,3 +18,11 @@ func Contain[T comparable](arr []T, target T) bool {
 	}
 	return false
 }
+
+func ComputeCfgHashIdByName(name string) int64 {
+	var id int64
+	for _, c := range name {
+		id = 31*id + int64(c)
+	}
+	return id
+}
