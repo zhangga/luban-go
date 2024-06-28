@@ -8,19 +8,21 @@ import (
 	"sync"
 )
 
+// IManager 所有管理器的接口
 type IManager interface {
+	key() uintptr
+
 	Init(logger logger.Logger)
 	PostInit()
 }
 
 var (
+	// managers 注册的管理器
 	managers = make(map[uintptr]IManager)
 	locker   sync.RWMutex
 )
 
 func Register[T IManager]() {
-	// 获取T的类型信息
-	rtype := reflect2.RTypeOf((*T)(nil))
 	var t T
 	typ := reflect.TypeOf(t).Elem()
 	// 创建类型T的新实例
@@ -28,22 +30,25 @@ func Register[T IManager]() {
 
 	locker.Lock()
 	defer locker.Unlock()
-	if _, ok := managers[rtype]; ok {
+	if _, ok := managers[instance.key()]; ok {
 		panic(fmt.Errorf("manager: %s already registered", typ.String()))
 	}
-	managers[rtype] = instance
+	managers[instance.key()] = instance
 }
 
 func Deregister[T IManager]() {
 	// 获取T的类型信息
-	rtype := reflect2.RTypeOf((*T)(nil))
+	var t T
+	typ := reflect.TypeOf(t).Elem()
+	// 创建类型T的新实例
+	instance := reflect.New(typ).Interface().(IManager)
 
 	locker.Lock()
 	defer locker.Unlock()
-	delete(managers, rtype)
+	delete(managers, instance.key())
 }
 
-func Get[T IManager]() (T, bool) {
+func GetIface[T IManager]() (T, bool) {
 	// 获取T的类型信息
 	rtype := reflect2.RTypeOf((*T)(nil))
 
@@ -57,8 +62,8 @@ func Get[T IManager]() (T, bool) {
 	return instance, false
 }
 
-func MustGet[T IManager]() T {
-	manager, ok := Get[T]()
+func MustGetIface[T IManager]() T {
+	manager, ok := GetIface[T]()
 	if !ok {
 		panic(fmt.Sprintf("manager: %s not found", reflect.TypeOf(manager).Elem().String()))
 	}

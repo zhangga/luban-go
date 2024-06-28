@@ -5,9 +5,10 @@ import (
 	"github.com/zhangga/luban/pkg/logger"
 )
 
-var _ manager.IManager = (*Manager)(nil)
+var _ manager.IDataLoaderManager = (*Manager)(nil)
 
 type Manager struct {
+	manager.EmbedDataLoaderManager
 	logger logger.Logger
 }
 

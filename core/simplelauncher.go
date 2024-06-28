@@ -21,7 +21,7 @@ func NewSimpleLauncher(logger logger.Logger) *SimpleLauncher {
 func (s *SimpleLauncher) Start(opts options.CommandOptions) {
 	s.initManagers()
 
-	pipeMgr, ok := manager.Get[*pipeline.Manager]()
+	pipeMgr, ok := manager.GetIface[manager.IPipelineManager]()
 	if !ok {
 		panic("pipeline manager not found")
 	}

@@ -24,7 +24,7 @@ func RegisterCollector(creator CollectorCreator) {
 	creators[t.Name()] = creator
 }
 
-func getCollectorCreator(name string) CollectorCreator {
+func GetCollectorCreator(name string) CollectorCreator {
 	locker.RLock()
 	defer locker.RUnlock()
 	if creator, ok := creators[name]; ok {

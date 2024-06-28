@@ -35,7 +35,7 @@ func RegisterSchemaLoader(creator LoaderCreator, priority int, dataType string, 
 	}
 }
 
-func getSchemaLoaderInfo(dataType, extName string) *LoaderInfo {
+func GetSchemaLoaderInfo(dataType, extName string) *LoaderInfo {
 	locker.RLock()
 	defer locker.RUnlock()
 	key := getLoaderKey(dataType, extName)

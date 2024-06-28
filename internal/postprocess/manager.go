@@ -1,13 +1,14 @@
-package outputsaver
+package postprocess
 
 import (
 	"github.com/zhangga/luban/core/manager"
 	"github.com/zhangga/luban/pkg/logger"
 )
 
-var _ manager.IManager = (*Manager)(nil)
+var _ manager.IPostProcessManager = (*Manager)(nil)
 
 type Manager struct {
+	manager.EmbedPostProcessManager
 	logger logger.Logger
 }
 

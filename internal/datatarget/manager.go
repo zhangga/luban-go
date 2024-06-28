@@ -1,13 +1,14 @@
-package codeformat
+package datatarget
 
 import (
 	"github.com/zhangga/luban/core/manager"
 	"github.com/zhangga/luban/pkg/logger"
 )
 
-var _ manager.IManager = (*Manager)(nil)
+var _ manager.IDataTargetManager = (*Manager)(nil)
 
 type Manager struct {
+	manager.EmbedDataTargetManager
 	logger logger.Logger
 }
 

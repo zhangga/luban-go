@@ -23,7 +23,7 @@ func Register(creator Creator) {
 	creators[t.Name()] = creator
 }
 
-func getCreator(name string) Creator {
+func GetCreator(name string) Creator {
 	locker.RLock()
 	defer locker.RUnlock()
 	if creator, ok := creators[name]; ok {

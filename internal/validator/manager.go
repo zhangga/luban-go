@@ -1,13 +1,14 @@
-package datatarget
+package validator
 
 import (
 	"github.com/zhangga/luban/core/manager"
 	"github.com/zhangga/luban/pkg/logger"
 )
 
-var _ manager.IManager = (*Manager)(nil)
+var _ manager.IValidatorManager = (*Manager)(nil)
 
 type Manager struct {
+	manager.EmbedValidatorManager
 	logger logger.Logger
 }
 

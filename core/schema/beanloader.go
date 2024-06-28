@@ -23,7 +23,7 @@ func RegisterBeanLoaderCreator(creator BeanLoaderCreator) {
 	beanLoaderCreators[t.Name()] = creator
 }
 
-func getBeanLoaderCreator(name string) BeanLoaderCreator {
+func GetBeanLoaderCreator(name string) BeanLoaderCreator {
 	eanLoaderLocker.RLock()
 	defer eanLoaderLocker.RUnlock()
 	if creator, ok := beanLoaderCreators[name]; ok {

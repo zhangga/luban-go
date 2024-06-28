@@ -38,7 +38,7 @@ func (s *DefaultSchemaCollector) Load() {
 	// schema loader
 	for _, importFile := range s.pipeline.Config().Imports {
 		s.logger.Debugf("import schema file: %s, type: %s", importFile.FileName, importFile.Type)
-		schemaMgr := manager.MustGet[*schema.Manager]()
+		schemaMgr := manager.MustGetIface[manager.ISchemaManager]()
 		schemaLoader := schemaMgr.CreateSchemaLoader(filepath.Ext(importFile.FileName), importFile.Type, s)
 		schemaLoader.Load(importFile.FileName)
 	}
@@ -59,7 +59,7 @@ func (s *DefaultSchemaCollector) loadTableValueTypeSchemasFromFile() {
 			defer wg.Done()
 
 			fileName := t.InputFiles[0]
-			schemaMgr := manager.MustGet[*schema.Manager]()
+			schemaMgr := manager.MustGetIface[manager.ISchemaManager]()
 			beanLoader := schemaMgr.CreateBeanLoader(beanSchemaLoaderName, s)
 			fullPath := filepath.Join(s.pipeline.Config().InputDataDir, fileName)
 			bean := beanLoader.Load(fullPath, t.ValueType)

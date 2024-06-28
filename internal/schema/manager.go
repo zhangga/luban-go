@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"github.com/zhangga/luban/core/manager"
 	"github.com/zhangga/luban/core/pipeline"
+	"github.com/zhangga/luban/core/schema"
 	"github.com/zhangga/luban/pkg/logger"
 )
 
-var _ manager.IManager = (*Manager)(nil)
+var _ manager.ISchemaManager = (*Manager)(nil)
 
 type Manager struct {
+	manager.EmbedSchemaManager
 	logger logger.Logger
 }
 
@@ -20,16 +22,16 @@ func (m *Manager) Init(logger logger.Logger) {
 func (m *Manager) PostInit() {
 }
 
-func (m *Manager) CreateSchemaCollector(name string, pipeline pipeline.IPipeline) ISchemaCollector {
-	creator := getCollectorCreator(name)
+func (m *Manager) CreateSchemaCollector(name string, pipeline pipeline.IPipeline) schema.ISchemaCollector {
+	creator := schema.GetCollectorCreator(name)
 	if creator == nil {
 		panic(fmt.Errorf("SchemaCollector %s not found", name))
 	}
 	return creator(m.logger, pipeline)
 }
 
-func (m *Manager) CreateSchemaLoader(extName, dataType string, schemaCollector ISchemaCollector) ISchemaLoader {
-	loaderInfo := getSchemaLoaderInfo(dataType, extName)
+func (m *Manager) CreateSchemaLoader(extName, dataType string, schemaCollector schema.ISchemaCollector) schema.ISchemaLoader {
+	loaderInfo := schema.GetSchemaLoaderInfo(dataType, extName)
 	if loaderInfo == nil {
 		panic(fmt.Errorf("SchemaLoader type:%s, extName:%s not found", dataType, extName))
 	}
@@ -37,8 +39,8 @@ func (m *Manager) CreateSchemaLoader(extName, dataType string, schemaCollector I
 	return loader
 }
 
-func (m *Manager) CreateBeanLoader(name string, collector ISchemaCollector) IBeanSchemaLoader {
-	creator := getBeanLoaderCreator(name)
+func (m *Manager) CreateBeanLoader(name string, collector schema.ISchemaCollector) schema.IBeanSchemaLoader {
+	creator := schema.GetBeanLoaderCreator(name)
 	if creator == nil {
 		panic(fmt.Errorf("BeanLoader %s not found", name))
 	}

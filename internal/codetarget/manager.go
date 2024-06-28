@@ -1,13 +1,14 @@
-package template
+package codetarget
 
 import (
 	"github.com/zhangga/luban/core/manager"
 	"github.com/zhangga/luban/pkg/logger"
 )
 
-var _ manager.IManager = (*Manager)(nil)
+var _ manager.ICodeTargetManager = (*Manager)(nil)
 
 type Manager struct {
+	manager.EmbedCodeTargetManager
 	logger logger.Logger
 }
 

@@ -6,7 +6,6 @@ import (
 	"github.com/zhangga/luban/core/lubanconf"
 	"github.com/zhangga/luban/core/manager"
 	"github.com/zhangga/luban/core/pipeline"
-	"github.com/zhangga/luban/core/schema"
 	"github.com/zhangga/luban/pkg/logger"
 )
 
@@ -58,7 +57,7 @@ func (p *DefaultPipeline) loadLubanConfig() {
 }
 
 func (p *DefaultPipeline) loadSchema() error {
-	schemaMgr, ok := manager.Get[*schema.Manager]()
+	schemaMgr, ok := manager.GetIface[manager.ISchemaManager]()
 	if !ok {
 		return errors.New("schema manager not found")
 	}
