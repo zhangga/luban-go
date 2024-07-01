@@ -3,6 +3,8 @@ package schema
 import (
 	"fmt"
 	"github.com/zhangga/luban/core/schema"
+	"github.com/zhangga/luban/internal/defs"
+	"github.com/zhangga/luban/internal/rawdefs"
 	"github.com/zhangga/luban/pkg/logger"
 )
 
@@ -36,7 +38,29 @@ func (e *ExcelSchemaLoader) Load(fileName string) {
 }
 
 func (e *ExcelSchemaLoader) loadTableListFromFile(fileName string) {
-	panic("implement me")
+	defTableRecordType := defs.NewDefBean(rawdefs.RawBean{
+		Namespace:   "__intern__",
+		Name:        "__TableRecord__",
+		IsValueType: false,
+		Fields: []*rawdefs.RawField{
+			{Name: "full_name", Type: "string"},
+			{Name: "value_type", Type: "string"},
+			{Name: "index", Type: "string"},
+			{Name: "mode", Type: "string"},
+			{Name: "group", Type: "string"},
+			{Name: "comment", Type: "string"},
+			{Name: "read_schema_from_file", Type: "bool"},
+			{Name: "input", Type: "string"},
+			{Name: "output", Type: "string"},
+			{Name: "tags", Type: "string"},
+		},
+	})
+	defTableRecordType.DefTypeBase.Assembly = defs.NewDefAssembly(e.logger, &rawdefs.RawAssembly{
+		Targets: []*rawdefs.RawTarget{{Name: "default", Manager: "Tables"}},
+	}, "default", nil)
+	defTableRecordType.PreCompile()
+	defTableRecordType.Compile()
+	defTableRecordType.PostCompile()
 }
 
 func (e *ExcelSchemaLoader) loadBeanListFromFile(fileName string) {

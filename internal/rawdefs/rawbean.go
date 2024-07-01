@@ -17,8 +17,8 @@ type RawBean struct {
 	Alias       string
 	Sep         string
 	Groups      []string
-	Fields      []RawField
-	TypeMappers []TypeMapper
+	Fields      []*RawField
+	TypeMappers []*TypeMapper
 }
 
 func (r *RawBean) MustEmbedUnimplementedBean() {}

@@ -2,38 +2,42 @@ package defs
 
 import (
 	"fmt"
+	"github.com/zhangga/luban/core/pipeline"
+	"github.com/zhangga/luban/core/refs"
 	"github.com/zhangga/luban/core/schema"
 	"github.com/zhangga/luban/internal/rawdefs"
 	"github.com/zhangga/luban/internal/utils"
 )
 
-type IDefType interface {
-	PreCompile()
-	Compile()
-	PostCompile()
-}
-
 // DefTypeBase 类型定义的基类
 type DefTypeBase struct {
 	Assembly    *DefAssembly
 	Name        string
-	Namespace   string
+	namespace   string
 	Groups      []string
 	Comment     string
 	Tags        map[string]string
-	TypeMappers []rawdefs.TypeMapper
+	TypeMappers []*rawdefs.TypeMapper
+}
+
+func (t *DefTypeBase) SetAssembly(assembly refs.IDefAssembly) {
+	t.Assembly = assembly.(*DefAssembly)
+}
+
+func (t *DefTypeBase) Namespace() string {
+	return t.namespace
 }
 
 func (t *DefTypeBase) FullName() string {
-	return utils.MakeFullName(t.Namespace, t.Name)
+	return utils.MakeFullName(t.namespace, t.Name)
 }
 
-func (t *DefTypeBase) NamespaceWithTopModule() string {
-
+func (t *DefTypeBase) NamespaceWithTopModule(ctx pipeline.Context) string {
+	return utils.MakeNamespace(ctx.TopModule(), t.namespace)
 }
 
-func (t *DefTypeBase) FullNameWithTopModule() string {
-
+func (t *DefTypeBase) FullNameWithTopModule(ctx pipeline.Context) string {
+	return utils.MakeNamespace(ctx.TopModule(), t.FullName())
 }
 
 func (t *DefTypeBase) HasTag(attrName string) bool {

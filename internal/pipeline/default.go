@@ -16,6 +16,7 @@ type DefaultPipeline struct {
 	logger logger.Logger
 	args   pipeline.Arguments
 	config *lubanconf.LubanConfig
+	ctx    *pContext
 }
 
 func NewDefaultPipeline(logger logger.Logger) pipeline.IPipeline {
@@ -35,6 +36,9 @@ func (p *DefaultPipeline) Run(args pipeline.Arguments) error {
 	if err := p.loadSchema(); err != nil {
 		return err
 	}
+	if err := p.prepareContext(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -44,6 +48,10 @@ func (p *DefaultPipeline) Args() pipeline.Arguments {
 
 func (p *DefaultPipeline) Config() *lubanconf.LubanConfig {
 	return p.config
+}
+
+func (p *DefaultPipeline) Context() pipeline.Context {
+	return p.ctx
 }
 
 func (p *DefaultPipeline) loadLubanConfig() {
@@ -65,5 +73,16 @@ func (p *DefaultPipeline) loadSchema() error {
 	p.logger.Infof("load schema.collector: %s, path: %s", p.args.SchemaCollector, p.args.ConfFile)
 	schemaCollector := schemaMgr.CreateSchemaCollector(p.args.SchemaCollector, p)
 	schemaCollector.Load()
+	return nil
+}
+
+func (p *DefaultPipeline) prepareContext() error {
+	p.logger.Debugf("prepare generation context")
+	//builder := NewContextBuilder()
+	//ctx, err := builder.Build(context.Background())
+	//if err != nil {
+	//	return err
+	//}
+	//p.ctx = ctx
 	return nil
 }

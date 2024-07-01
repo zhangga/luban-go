@@ -14,9 +14,9 @@ type RawEnum struct {
 	IsUniqueItemId bool
 	Comment        string
 	Tags           map[string]string
-	Items          []EnumItem
+	Items          []*EnumItem
 	Groups         []string
-	TypeMappers    []TypeMapper
+	TypeMappers    []*TypeMapper
 }
 
 func (e *RawEnum) MustEmbedUnimplementedEnum() {}

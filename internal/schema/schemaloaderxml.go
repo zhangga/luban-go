@@ -113,7 +113,7 @@ func (l *XmlSchemaLoader) AddEnum(ele *etree.Element) {
 		switch itemEle.Tag {
 		case "var":
 			validAttrKeys(l.fileName, itemEle, enumItemOptionalAttrs, enumItemRequiredAttrs)
-			rawEnum.Items = append(rawEnum.Items, rawdefs.EnumItem{
+			rawEnum.Items = append(rawEnum.Items, &rawdefs.EnumItem{
 				Name:    getRequiredAttr(l.fileName, itemEle, enumItemKeyName),
 				Alias:   getOptionalAttr(itemEle, enumItemKeyAlias),
 				Value:   getOptionalAttr(itemEle, enumItemKeyValue),
@@ -384,7 +384,7 @@ var (
 )
 
 // createFieldByElement 创建字段
-func createFieldByElement(ele *etree.Element, fileName string) rawdefs.RawField {
+func createFieldByElement(ele *etree.Element, fileName string) *rawdefs.RawField {
 	validAttrKeys(fileName, ele, fieldOptionalAttrs, fieldRequiredAttrs)
 	name := getRequiredAttr(fileName, ele, fieldKeyName)
 	typeStr := getRequiredAttr(fileName, ele, fieldKeyType)
@@ -394,8 +394,8 @@ func createFieldByElement(ele *etree.Element, fileName string) rawdefs.RawField 
 	return createField(fileName, name, typeStr, group, comment, tags, false)
 }
 
-func createField(fileName, name, typeStr, group, comment, tags string, ignoreNameValidation bool) rawdefs.RawField {
-	field := rawdefs.RawField{
+func createField(fileName, name, typeStr, group, comment, tags string, ignoreNameValidation bool) *rawdefs.RawField {
+	field := &rawdefs.RawField{
 		Name:              name,
 		Groups:            createGroups(group),
 		Comment:           comment,
@@ -414,7 +414,7 @@ const (
 )
 
 // createTypeMapper 创建类型映射
-func createTypeMapper(ele *etree.Element, fileName, fullName string) rawdefs.TypeMapper {
+func createTypeMapper(ele *etree.Element, fileName, fullName string) *rawdefs.TypeMapper {
 	target := getRequiredAttr(fileName, ele, enumItemMapperKeyTarget)
 	targets := strings.FieldsFunc(target, func(c rune) bool {
 		return c == ',' || c == ';' || c == '|'
@@ -433,7 +433,7 @@ func createTypeMapper(ele *etree.Element, fileName, fullName string) rawdefs.Typ
 		opts[key] = value
 	}
 
-	return rawdefs.TypeMapper{
+	return &rawdefs.TypeMapper{
 		Targets:     targets,
 		CodeTargets: codeTargets,
 		Options:     opts,
