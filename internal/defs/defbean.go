@@ -2,6 +2,7 @@ package defs
 
 import (
 	"fmt"
+	"github.com/zhangga/luban/core/pipeline"
 	"github.com/zhangga/luban/core/refs"
 	"github.com/zhangga/luban/internal/rawdefs"
 	"github.com/zhangga/luban/internal/utils"
@@ -9,6 +10,7 @@ import (
 
 var _ refs.IDefType = (*DefBean)(nil)
 
+// DefBean 对象定义
 type DefBean struct {
 	DefTypeBase
 	Id                           int64
@@ -164,17 +166,43 @@ func (b *DefBean) SetupParentRecursively() {
 	b.ParentDefType.SetupParentRecursively()
 }
 
-func (b *DefBean) PreCompile() {
-	//TODO implement me
-	panic("implement me")
+func (b *DefBean) PreCompile(pipeline pipeline.IPipeline) {
+	b.DefTypeBase.PreCompile(pipeline)
+	b.SetupParentRecursively()
+	b.CollectHierarchyFields(b.HierarchyFields)
 }
 
-func (b *DefBean) Compile() {
-	//TODO implement me
-	panic("implement me")
+func (b *DefBean) Compile(pipeline pipeline.IPipeline) {
+	var cs []*DefBean
+	if len(b.Children) > 0 {
+		b.CollectHierarchyNotAbstractChildren(cs)
+	}
+	b.HierarchyNotAbstractChildren = cs
+	// 检查别名是否重复
+	nameOrAliasNames := map[string]struct{}{}
+	for _, child := range b.HierarchyNotAbstractChildren {
+		nameOrAliasNames[child.Name] = struct{}{}
+	}
+	for _, child := range b.HierarchyNotAbstractChildren {
+		if len(child.Alias) > 0 {
+			if _, ok := nameOrAliasNames[child.Alias]; ok {
+				panic(fmt.Errorf("bean: %s, alias: %s 重复", child.FullName(), child.Alias))
+			}
+			nameOrAliasNames[child.Alias] = struct{}{}
+		}
+	}
+	CompileFields(pipeline, &b.DefTypeBase, b.HierarchyFields)
 }
 
-func (b *DefBean) PostCompile() {
-	//TODO implement me
-	panic("implement me")
+func (b *DefBean) PostCompile(pipeline pipeline.IPipeline) {
+	for _, field := range b.HierarchyFields {
+		field.PostCompile(pipeline)
+	}
+	if b.IsAbstractType() && b.ParentDefType == nil {
+		autoId := 1
+		for _, child := range b.HierarchyNotAbstractChildren {
+			child.AutoId = autoId
+			autoId++
+		}
+	}
 }

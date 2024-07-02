@@ -2,6 +2,8 @@ package refs
 
 // TType types类型接口
 type TType interface {
+	TypeName() string // 类型名称
+	IsBean() bool     // 是否bean类型
 	IsNullable() bool
 	HasTag(attrName string) bool
 	GetTag(attrName string) (string, bool)
@@ -12,10 +14,8 @@ type TType interface {
 
 // EmbedTType types类型的基类
 type EmbedTType struct {
-	TypeName     string            // 类型名称
 	IsNullable   bool              // 是否可空
 	IsCollection bool              // 是否集合
-	IsBean       bool              // 是否bean
 	IsEnum       bool              // 是否枚举
 	ElementType  TType             // 集合元素类型
 	Tags         map[string]string // 标签

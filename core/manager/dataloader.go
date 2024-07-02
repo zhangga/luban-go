@@ -1,10 +1,14 @@
 package manager
 
-import "github.com/modern-go/reflect2"
+import (
+	"github.com/modern-go/reflect2"
+	"github.com/zhangga/luban/core/refs"
+)
 
 type IDataLoaderManager interface {
 	IManager
 	MustEmbedDataLoaderManager
+	LoadTableFile(valueType refs.TType, file, subAssetName string, options map[string]string) ([]*refs.Record, error)
 }
 
 type MustEmbedDataLoaderManager interface {

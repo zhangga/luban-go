@@ -2,9 +2,12 @@ package schema
 
 import (
 	"fmt"
+	"github.com/zhangga/luban/core/manager"
 	"github.com/zhangga/luban/core/schema"
 	"github.com/zhangga/luban/internal/defs"
 	"github.com/zhangga/luban/internal/rawdefs"
+	"github.com/zhangga/luban/internal/types"
+	"github.com/zhangga/luban/internal/utils"
 	"github.com/zhangga/luban/pkg/logger"
 )
 
@@ -55,12 +58,16 @@ func (e *ExcelSchemaLoader) loadTableListFromFile(fileName string) {
 			{Name: "tags", Type: "string"},
 		},
 	})
-	defTableRecordType.DefTypeBase.Assembly = defs.NewDefAssembly(e.logger, &rawdefs.RawAssembly{
+	defTableRecordType.DefTypeBase.Assembly = defs.NewDefAssembly(e.logger, e.collector.Pipeline(), &rawdefs.RawAssembly{
 		Targets: []*rawdefs.RawTarget{{Name: "default", Manager: "Tables"}},
 	}, "default", nil)
-	defTableRecordType.PreCompile()
-	defTableRecordType.Compile()
-	defTableRecordType.PostCompile()
+	defTableRecordType.PreCompile(e.collector.Pipeline())
+	defTableRecordType.Compile(e.collector.Pipeline())
+	defTableRecordType.PostCompile(e.collector.Pipeline())
+
+	tableRecordType := types.NewTBean(defTableRecordType, false, nil)
+	actualFile, sheetName := utils.SplitFileAndSheetName(utils.StandardizePath(fileName))
+	manager.MustGetIface[manager.IDataLoaderManager]().LoadTableFile(tableRecordType, actualFile, sheetName, nil)
 }
 
 func (e *ExcelSchemaLoader) loadBeanListFromFile(fileName string) {

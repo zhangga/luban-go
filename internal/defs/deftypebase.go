@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/zhangga/luban/core/pipeline"
 	"github.com/zhangga/luban/core/refs"
-	"github.com/zhangga/luban/core/schema"
 	"github.com/zhangga/luban/internal/rawdefs"
 	"github.com/zhangga/luban/internal/utils"
 )
@@ -56,12 +55,12 @@ func (t *DefTypeBase) GetTag(attrName string) (string, bool) {
 	return v, ok
 }
 
-func (t *DefTypeBase) PreCompile(collector schema.ISchemaCollector) {
+func (t *DefTypeBase) PreCompile(pipeline pipeline.IPipeline) {
 	if len(t.Groups) == 0 {
 		return
 	}
 
-	config := collector.Pipeline().Config()
+	config := pipeline.Config()
 	if utils.Contain[string](t.Groups, "*") {
 		t.Groups = t.Groups[:0]
 		for _, g := range config.Groups {
