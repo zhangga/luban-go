@@ -9,6 +9,7 @@ var _ refs.TType = (*TBean)(nil)
 
 type TBean struct {
 	refs.EmbedTType
+	refs.EmbedTBean
 	DefBean *defs.DefBean
 }
 

@@ -2,7 +2,7 @@ package defs
 
 import (
 	"fmt"
-	"github.com/zhangga/luban/core/pipeline"
+	"github.com/zhangga/luban/core/pctx"
 	"github.com/zhangga/luban/core/refs"
 	"github.com/zhangga/luban/internal/rawdefs"
 	"github.com/zhangga/luban/internal/utils"
@@ -31,11 +31,11 @@ func (t *DefTypeBase) FullName() string {
 	return utils.MakeFullName(t.namespace, t.Name)
 }
 
-func (t *DefTypeBase) NamespaceWithTopModule(ctx pipeline.Context) string {
+func (t *DefTypeBase) NamespaceWithTopModule(ctx pctx.Context) string {
 	return utils.MakeNamespace(ctx.TopModule(), t.namespace)
 }
 
-func (t *DefTypeBase) FullNameWithTopModule(ctx pipeline.Context) string {
+func (t *DefTypeBase) FullNameWithTopModule(ctx pctx.Context) string {
 	return utils.MakeNamespace(ctx.TopModule(), t.FullName())
 }
 
@@ -55,12 +55,12 @@ func (t *DefTypeBase) GetTag(attrName string) (string, bool) {
 	return v, ok
 }
 
-func (t *DefTypeBase) PreCompile(pipeline pipeline.IPipeline) {
+func (t *DefTypeBase) PreCompile(ctx pctx.Context) {
 	if len(t.Groups) == 0 {
 		return
 	}
 
-	config := pipeline.Config()
+	config := ctx.Config()
 	if utils.Contain[string](t.Groups, "*") {
 		t.Groups = t.Groups[:0]
 		for _, g := range config.Groups {

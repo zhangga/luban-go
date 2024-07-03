@@ -1,10 +1,13 @@
 package pipeline
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/zhangga/luban/core/lubanconf"
 	"github.com/zhangga/luban/core/manager"
+	"github.com/zhangga/luban/core/options"
+	"github.com/zhangga/luban/core/pctx"
 	"github.com/zhangga/luban/core/pipeline"
 	"github.com/zhangga/luban/pkg/logger"
 )
@@ -14,8 +17,6 @@ var _ pipeline.IPipeline = (*DefaultPipeline)(nil)
 // DefaultPipeline default pipeline
 type DefaultPipeline struct {
 	logger logger.Logger
-	args   pipeline.Arguments
-	config *lubanconf.LubanConfig
 	ctx    *pContext
 }
 
@@ -29,38 +30,53 @@ func (p *DefaultPipeline) Name() string {
 	return "default"
 }
 
-func (p *DefaultPipeline) Run(args pipeline.Arguments) error {
-	p.args = args
-	p.loadLubanConfig()
+func (p *DefaultPipeline) Context() pctx.Context {
+	return p.ctx
+}
 
-	if err := p.loadSchema(); err != nil {
+func (p *DefaultPipeline) Run(opts options.CommandOptions) error {
+	// 初始化上下文
+	if err := p.initContext(opts); err != nil {
 		return err
 	}
-	if err := p.prepareContext(); err != nil {
+
+	// 加载schema
+	if err := p.loadSchema(); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (p *DefaultPipeline) Args() pipeline.Arguments {
-	return p.args
+func (p *DefaultPipeline) initContext(opts options.CommandOptions) error {
+	p.logger.Debugf("prepare pipeline context")
+
+	// 运行参数
+	args := options.CreateArguments(opts)
+
+	// 加载luban配置文件
+	config, err := p.loadLubanConfig(args.ConfFile)
+	if err != nil {
+		return err
+	}
+
+	ctx := &pContext{
+		Context: context.Background(),
+		config:  config,
+		args:    args,
+	}
+
+	p.ctx = ctx
+	return nil
 }
 
-func (p *DefaultPipeline) Config() *lubanconf.LubanConfig {
-	return p.config
-}
-
-func (p *DefaultPipeline) Context() pipeline.Context {
-	return p.ctx
-}
-
-func (p *DefaultPipeline) loadLubanConfig() {
+// loadLubanConfig 加载luban配置文件
+func (p *DefaultPipeline) loadLubanConfig(confFile string) (*lubanconf.LubanConfig, error) {
 	confLoader := lubanconf.NewGlobalConfigLoader(p.logger)
 	// 加载luban配置文件
-	if config, err := confLoader.Load(p.args.ConfFile); err != nil {
-		panic(fmt.Errorf("load config file %s, failed: %w", p.args.ConfFile, err))
+	if config, err := confLoader.Load(confFile); err != nil {
+		return nil, fmt.Errorf("load config file %s, failed: %w", confFile, err)
 	} else {
-		p.config = config
+		return config, nil
 	}
 }
 
@@ -70,19 +86,8 @@ func (p *DefaultPipeline) loadSchema() error {
 		return errors.New("schema manager not found")
 	}
 
-	p.logger.Infof("load schema.collector: %s, path: %s", p.args.SchemaCollector, p.args.ConfFile)
-	schemaCollector := schemaMgr.CreateSchemaCollector(p.args.SchemaCollector, p)
-	schemaCollector.Load()
-	return nil
-}
-
-func (p *DefaultPipeline) prepareContext() error {
-	p.logger.Debugf("prepare generation context")
-	//builder := NewContextBuilder()
-	//ctx, err := builder.Build(context.Background())
-	//if err != nil {
-	//	return err
-	//}
-	//p.ctx = ctx
+	p.logger.Infof("load schema.collector: %s, path: %s", p.ctx.args.SchemaCollector, p.ctx.args.ConfFile)
+	schemaCollector := schemaMgr.CreateSchemaCollector(p.ctx.args.SchemaCollector, p)
+	schemaCollector.Load(p.ctx)
 	return nil
 }

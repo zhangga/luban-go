@@ -2,7 +2,7 @@ package defs
 
 import (
 	"fmt"
-	"github.com/zhangga/luban/core/pipeline"
+	"github.com/zhangga/luban/core/pctx"
 	"github.com/zhangga/luban/core/refs"
 	"github.com/zhangga/luban/internal/rawdefs"
 	"github.com/zhangga/luban/internal/utils"
@@ -26,7 +26,7 @@ type DefAssembly struct {
 	exportTables           []*DefTable
 }
 
-func NewDefAssembly(logger logger.Logger, pipeline pipeline.IPipeline, rawAssembly *rawdefs.RawAssembly, target string, outputTables []string) *DefAssembly {
+func NewDefAssembly(ctx pctx.Context, logger logger.Logger, rawAssembly *rawdefs.RawAssembly, target string, outputTables []string) *DefAssembly {
 	assembly := &DefAssembly{
 		logger:  logger,
 		targets: rawAssembly.Targets,
@@ -76,13 +76,13 @@ func NewDefAssembly(logger logger.Logger, pipeline pipeline.IPipeline, rawAssemb
 		t.SetAssembly(assembly)
 	}
 	for _, t := range assembly.TypeList {
-		t.PreCompile(pipeline)
+		t.PreCompile(ctx)
 	}
 	for _, t := range assembly.TypeList {
-		t.Compile(pipeline)
+		t.Compile(ctx)
 	}
 	for _, t := range assembly.TypeList {
-		t.PostCompile(pipeline)
+		t.PostCompile(ctx)
 	}
 	return assembly
 }

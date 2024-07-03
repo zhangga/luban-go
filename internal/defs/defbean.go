@@ -2,7 +2,7 @@ package defs
 
 import (
 	"fmt"
-	"github.com/zhangga/luban/core/pipeline"
+	"github.com/zhangga/luban/core/pctx"
 	"github.com/zhangga/luban/core/refs"
 	"github.com/zhangga/luban/internal/rawdefs"
 	"github.com/zhangga/luban/internal/utils"
@@ -166,13 +166,13 @@ func (b *DefBean) SetupParentRecursively() {
 	b.ParentDefType.SetupParentRecursively()
 }
 
-func (b *DefBean) PreCompile(pipeline pipeline.IPipeline) {
-	b.DefTypeBase.PreCompile(pipeline)
+func (b *DefBean) PreCompile(ctx pctx.Context) {
+	b.DefTypeBase.PreCompile(ctx)
 	b.SetupParentRecursively()
 	b.CollectHierarchyFields(b.HierarchyFields)
 }
 
-func (b *DefBean) Compile(pipeline pipeline.IPipeline) {
+func (b *DefBean) Compile(ctx pctx.Context) {
 	var cs []*DefBean
 	if len(b.Children) > 0 {
 		b.CollectHierarchyNotAbstractChildren(cs)
@@ -191,12 +191,12 @@ func (b *DefBean) Compile(pipeline pipeline.IPipeline) {
 			nameOrAliasNames[child.Alias] = struct{}{}
 		}
 	}
-	CompileFields(pipeline, &b.DefTypeBase, b.HierarchyFields)
+	CompileFields(ctx, &b.DefTypeBase, b.HierarchyFields)
 }
 
-func (b *DefBean) PostCompile(pipeline pipeline.IPipeline) {
+func (b *DefBean) PostCompile(ctx pctx.Context) {
 	for _, field := range b.HierarchyFields {
-		field.PostCompile(pipeline)
+		field.PostCompile(ctx)
 	}
 	if b.IsAbstractType() && b.ParentDefType == nil {
 		autoId := 1

@@ -21,3 +21,17 @@ func SplitFileAndSheetName(url string) (string, string) {
 
 	return url[:sheetSepIndex], url[sheetSepIndex+1:]
 }
+
+func FileExtWithoutDot(fullName string) string {
+	if index := strings.LastIndex(fullName, "."); index >= 0 {
+		return fullName[index+1:]
+	}
+	return ""
+}
+
+func IsExcelFile(fullName string) bool {
+	return strings.HasSuffix(fullName, ".csv") ||
+		strings.HasSuffix(fullName, ".xls") ||
+		strings.HasSuffix(fullName, ".xlsx") ||
+		strings.HasSuffix(fullName, ".xlsm")
+}

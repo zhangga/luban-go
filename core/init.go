@@ -1,12 +1,16 @@
 package core
 
 import (
+	"github.com/zhangga/luban/core/dataloader"
 	"github.com/zhangga/luban/core/manager"
 	"github.com/zhangga/luban/core/pipeline"
+	"github.com/zhangga/luban/core/refs"
 	"github.com/zhangga/luban/core/schema"
 	codeformat2 "github.com/zhangga/luban/internal/codeformat"
 	codetarget2 "github.com/zhangga/luban/internal/codetarget"
 	dataloader2 "github.com/zhangga/luban/internal/dataloader"
+	"github.com/zhangga/luban/internal/dataloader/excel"
+	"github.com/zhangga/luban/internal/dataloader/visitors"
 	datatarget2 "github.com/zhangga/luban/internal/datatarget"
 	l10n2 "github.com/zhangga/luban/internal/l10n"
 	outputsaver2 "github.com/zhangga/luban/internal/outputsaver"
@@ -48,4 +52,14 @@ func init() {
 	schema.RegisterSchemaLoader(schema2.NewExcelSchemaLoader, 0, "enum", ".xlsx", ".xls", ".xlsm", ".csv")
 	// 注册bean loader
 	schema.RegisterBeanLoaderCreator(schema2.NewBeanSchemaFromExcelHeaderLoader)
+}
+
+// init 注册data loader
+func init() {
+	dataloader.Register(excel.NewDataSource)
+}
+
+// init 注册visitor
+func init() {
+	refs.RegisterTypeVisitor[*visitors.SheetDataCreator]()
 }

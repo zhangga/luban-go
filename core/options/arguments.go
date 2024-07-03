@@ -1,8 +1,7 @@
-package pipeline
+package options
 
 import (
 	"fmt"
-	"github.com/zhangga/luban/core/options"
 	"strings"
 )
 
@@ -21,7 +20,7 @@ type Arguments struct {
 	CustomOpts          map[string]string // 自定义参数
 }
 
-func CreateArguments(opts options.CommandOptions) Arguments {
+func CreateArguments(opts CommandOptions) Arguments {
 	options := parseOptions(opts.Xargs...)
 	return Arguments{
 		Target:              opts.Target,

@@ -2,7 +2,7 @@ package defs
 
 import (
 	"fmt"
-	"github.com/zhangga/luban/core/pipeline"
+	"github.com/zhangga/luban/core/pctx"
 	"github.com/zhangga/luban/core/refs"
 	"github.com/zhangga/luban/internal/rawdefs"
 	"github.com/zhangga/luban/internal/utils"
@@ -73,15 +73,15 @@ func (f *DefField) String() string {
 	return fmt.Sprintf("%s.%s", f.HostType.FullName(), f.Name)
 }
 
-func (f *DefField) Compile(pipeline pipeline.IPipeline) {
+func (f *DefField) Compile(ctx pctx.Context) {
 	panic("implement me")
 }
 
-func (f *DefField) PostCompile(pipeline pipeline.IPipeline) {
+func (f *DefField) PostCompile(ctx pctx.Context) {
 	panic("implement me")
 }
 
-func CompileFields[T refs.IDefField](pipeline pipeline.IPipeline, hostType *DefTypeBase, fields []T) {
+func CompileFields[T refs.IDefField](ctx pctx.Context, hostType *DefTypeBase, fields []T) {
 	names := make(map[string]struct{})
 	nextAutoId := 1
 	for _, field := range fields {
@@ -100,6 +100,6 @@ func CompileFields[T refs.IDefField](pipeline pipeline.IPipeline, hostType *DefT
 	}
 
 	for _, field := range fields {
-		field.Compile(pipeline)
+		field.Compile(ctx)
 	}
 }

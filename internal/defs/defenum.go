@@ -1,7 +1,7 @@
 package defs
 
 import (
-	"github.com/zhangga/luban/core/pipeline"
+	"github.com/zhangga/luban/core/pctx"
 	"github.com/zhangga/luban/core/refs"
 	"github.com/zhangga/luban/internal/rawdefs"
 )
@@ -84,17 +84,17 @@ func NewDefEnum(enum *rawdefs.RawEnum) *DefEnum {
 	return defEnum
 }
 
-func (e *DefEnum) PreCompile(pipeline pipeline.IPipeline) {
+func (e *DefEnum) PreCompile(ctx pctx.Context) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (e *DefEnum) Compile(pipeline pipeline.IPipeline) {
+func (e *DefEnum) Compile(ctx pctx.Context) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (e *DefEnum) PostCompile(pipeline pipeline.IPipeline) {
+func (e *DefEnum) PostCompile(ctx pctx.Context) {
 	//TODO implement me
 	panic("implement me")
 }

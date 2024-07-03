@@ -2,41 +2,28 @@ package pipeline
 
 import (
 	"context"
-	"github.com/zhangga/luban/core/pipeline"
+	"github.com/zhangga/luban/core/lubanconf"
+	"github.com/zhangga/luban/core/options"
+	"github.com/zhangga/luban/core/pctx"
 	"github.com/zhangga/luban/internal/defs"
 	"github.com/zhangga/luban/internal/rawdefs"
 )
 
-type contextBuilder struct {
-	assembly    *defs.DefAssembly
-	includeTags []string
-	excludeTags []string
-	timeZone    string
-}
-
-func NewContextBuilder(assembly *defs.DefAssembly, includeTags, excludeTags []string, timeZone string) contextBuilder {
-	return contextBuilder{
-		assembly:    assembly,
-		includeTags: includeTags,
-		excludeTags: excludeTags,
-		timeZone:    timeZone,
-	}
-}
-
-func (b contextBuilder) Build(ctx context.Context) (*pContext, error) {
-	pctx := &pContext{
-		Context:     ctx,
-		DefAssembly: b.assembly,
-	}
-
-	return pctx, nil
-}
-
-var _ pipeline.Context = (*pContext)(nil)
+var _ pctx.Context = (*pContext)(nil)
 
 type pContext struct {
 	context.Context
 	*defs.DefAssembly
+	config *lubanconf.LubanConfig
+	args   options.Arguments
+}
+
+func (c *pContext) Config() *lubanconf.LubanConfig {
+	return c.config
+}
+
+func (c *pContext) Args() options.Arguments {
+	return c.args
 }
 
 func (c *pContext) Target() *rawdefs.RawTarget {

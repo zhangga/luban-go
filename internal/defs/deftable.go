@@ -1,7 +1,7 @@
 package defs
 
 import (
-	"github.com/zhangga/luban/core/pipeline"
+	"github.com/zhangga/luban/core/pctx"
 	"github.com/zhangga/luban/core/refs"
 	"github.com/zhangga/luban/internal/rawdefs"
 )
@@ -38,17 +38,17 @@ func NewDefTable(rawTable *rawdefs.RawTable) *DefTable {
 	}
 }
 
-func (t *DefTable) PreCompile(pipeline pipeline.IPipeline) {
+func (t *DefTable) PreCompile(ctx pctx.Context) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (t *DefTable) Compile(pipeline pipeline.IPipeline) {
+func (t *DefTable) Compile(ctx pctx.Context) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (t *DefTable) PostCompile(pipeline pipeline.IPipeline) {
+func (t *DefTable) PostCompile(ctx pctx.Context) {
 	//TODO implement me
 	panic("implement me")
 }

@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"github.com/zhangga/luban/core/pctx"
 	"github.com/zhangga/luban/core/pipeline"
 	"github.com/zhangga/luban/core/refs"
 )
@@ -8,7 +9,7 @@ import (
 type ISchemaCollector interface {
 	Name() string
 	Pipeline() pipeline.IPipeline
-	Load()
+	Load(ctx pctx.Context)
 
 	AddTable(t refs.UnimplementedTable)
 	AddBean(b refs.UnimplementedBean)
@@ -17,7 +18,7 @@ type ISchemaCollector interface {
 }
 
 type ISchemaLoader interface {
-	Load(fileName string)
+	Load(ctx pctx.Context, fileName string)
 }
 
 type IBeanSchemaLoader interface {

@@ -1,6 +1,8 @@
 package refs
 
-import "github.com/zhangga/luban/core/pipeline"
+import (
+	"github.com/zhangga/luban/core/pctx"
+)
 
 type IDefAssembly interface {
 	mustEmbedDefAssembly()
@@ -15,14 +17,14 @@ type IDefType interface {
 	Namespace() string
 	FullName() string
 	SetAssembly(assembly IDefAssembly)
-	PreCompile(pipeline pipeline.IPipeline)
-	Compile(pipeline pipeline.IPipeline)
-	PostCompile(pipeline pipeline.IPipeline)
+	PreCompile(ctx pctx.Context)
+	Compile(ctx pctx.Context)
+	PostCompile(ctx pctx.Context)
 }
 
 type IDefField interface {
 	Name() string
 	SetAutoId(id int)
-	Compile(pipeline pipeline.IPipeline)
-	PostCompile(pipeline pipeline.IPipeline)
+	Compile(ctx pctx.Context)
+	PostCompile(ctx pctx.Context)
 }

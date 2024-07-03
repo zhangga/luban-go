@@ -78,3 +78,7 @@ func TrimBracePairs(rawPair string) string {
 	}
 	return rawPair
 }
+
+func IsNormalFieldName(name string) bool {
+	return !strings.HasPrefix(name, "__") && !strings.HasPrefix(name, "#") && !strings.HasPrefix(name, "$")
+}

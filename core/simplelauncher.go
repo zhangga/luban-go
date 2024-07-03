@@ -3,7 +3,6 @@ package core
 import (
 	"github.com/zhangga/luban/core/manager"
 	"github.com/zhangga/luban/core/options"
-	"github.com/zhangga/luban/core/pipeline"
 	"github.com/zhangga/luban/pkg/logger"
 )
 
@@ -26,7 +25,7 @@ func (s *SimpleLauncher) Start(opts options.CommandOptions) {
 		panic("pipeline manager not found")
 	}
 	pipe := pipeMgr.CreatePipeline(opts.Pipeline)
-	if err := pipe.Run(pipeline.CreateArguments(opts)); err != nil {
+	if err := pipe.Run(opts); err != nil {
 		panic(err)
 	}
 

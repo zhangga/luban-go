@@ -3,6 +3,7 @@ package schema
 import (
 	"fmt"
 	"github.com/zhangga/luban/core/manager"
+	"github.com/zhangga/luban/core/pctx"
 	"github.com/zhangga/luban/core/schema"
 	"github.com/zhangga/luban/internal/defs"
 	"github.com/zhangga/luban/internal/rawdefs"
@@ -27,20 +28,20 @@ func NewExcelSchemaLoader(logger logger.Logger, dataType string, collector schem
 	}
 }
 
-func (e *ExcelSchemaLoader) Load(fileName string) {
+func (e *ExcelSchemaLoader) Load(ctx pctx.Context, fileName string) {
 	switch e.dataType {
 	case "table":
-		e.loadTableListFromFile(fileName)
+		e.loadTableListFromFile(ctx, fileName)
 	case "bean":
-		e.loadBeanListFromFile(fileName)
+		e.loadBeanListFromFile(ctx, fileName)
 	case "enum":
-		e.loadEnumListFromFile(fileName)
+		e.loadEnumListFromFile(ctx, fileName)
 	default:
 		panic(fmt.Errorf("加载文件: %s, 未知的数据类型: %s", fileName, e.dataType))
 	}
 }
 
-func (e *ExcelSchemaLoader) loadTableListFromFile(fileName string) {
+func (e *ExcelSchemaLoader) loadTableListFromFile(ctx pctx.Context, fileName string) {
 	defTableRecordType := defs.NewDefBean(rawdefs.RawBean{
 		Namespace:   "__intern__",
 		Name:        "__TableRecord__",
@@ -58,22 +59,28 @@ func (e *ExcelSchemaLoader) loadTableListFromFile(fileName string) {
 			{Name: "tags", Type: "string"},
 		},
 	})
-	defTableRecordType.DefTypeBase.Assembly = defs.NewDefAssembly(e.logger, e.collector.Pipeline(), &rawdefs.RawAssembly{
+	defTableRecordType.DefTypeBase.Assembly = defs.NewDefAssembly(ctx, e.logger, &rawdefs.RawAssembly{
 		Targets: []*rawdefs.RawTarget{{Name: "default", Manager: "Tables"}},
 	}, "default", nil)
-	defTableRecordType.PreCompile(e.collector.Pipeline())
-	defTableRecordType.Compile(e.collector.Pipeline())
-	defTableRecordType.PostCompile(e.collector.Pipeline())
+	defTableRecordType.PreCompile(ctx)
+	defTableRecordType.Compile(ctx)
+	defTableRecordType.PostCompile(ctx)
 
 	tableRecordType := types.NewTBean(defTableRecordType, false, nil)
 	actualFile, sheetName := utils.SplitFileAndSheetName(utils.StandardizePath(fileName))
-	manager.MustGetIface[manager.IDataLoaderManager]().LoadTableFile(tableRecordType, actualFile, sheetName, nil)
+	// 读取table数据
+	records, err := manager.MustGetIface[manager.IDataLoaderManager]().LoadTableFile(tableRecordType, actualFile, sheetName, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	panic("implement me" + fmt.Sprintf("%v", records))
 }
 
-func (e *ExcelSchemaLoader) loadBeanListFromFile(fileName string) {
+func (e *ExcelSchemaLoader) loadBeanListFromFile(ctx pctx.Context, fileName string) {
 	panic("implement me")
 }
 
-func (e *ExcelSchemaLoader) loadEnumListFromFile(fileName string) {
+func (e *ExcelSchemaLoader) loadEnumListFromFile(ctx pctx.Context, fileName string) {
 	panic("implement me")
 }

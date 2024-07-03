@@ -3,6 +3,7 @@ package schema
 import (
 	"fmt"
 	"github.com/beevik/etree"
+	"github.com/zhangga/luban/core/pctx"
 	"github.com/zhangga/luban/core/schema"
 	"github.com/zhangga/luban/internal/rawdefs"
 	"github.com/zhangga/luban/internal/utils"
@@ -39,7 +40,7 @@ func NewXmlSchemaLoader(logger logger.Logger, dataType string, collector schema.
 	return l
 }
 
-func (l *XmlSchemaLoader) Load(fileName string) {
+func (l *XmlSchemaLoader) Load(ctx pctx.Context, fileName string) {
 	l.fileName = fileName
 	doc := etree.NewDocument()
 	if err := doc.ReadFromFile(fileName); err != nil {
