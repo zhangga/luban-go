@@ -65,7 +65,6 @@ func (ds *RowColumnDataSource) ReadMulti(ttype refs.TType) []*refs.Record {
 			}
 			visitor := refs.MustGetTypeVisitor[refs.ITypeVisitor2[*RowColumnSheet, *TitleRow, refs.DType]]("sheet")
 			data := refs.DispatchAccept2[*RowColumnSheet, *TitleRow, refs.DType](visitor, ttype, sheet, row)
-			//data := ttype.ApplyVisitor2(visitor, sheet, row)
 			datas = append(datas, &refs.Record{
 				Data:   data,
 				Source: sheet.UrlWithParams(),

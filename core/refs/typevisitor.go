@@ -12,35 +12,35 @@ type ITypeVisitor interface {
 func DispatchAccept0[R DType](visitor ITypeVisitor0[R], ttype TType) R {
 	switch ttype.(type) {
 	case mustEmbedTBool:
-		return visitor.AcceptBool()
+		return visitor.AcceptBool(ttype)
 	case mustEmbedTByte:
-		return visitor.AcceptByte()
+		return visitor.AcceptByte(ttype)
 	case mustEmbedTShort:
-		return visitor.AcceptShort()
+		return visitor.AcceptShort(ttype)
 	case mustEmbedTInt:
-		return visitor.AcceptInt()
+		return visitor.AcceptInt(ttype)
 	case mustEmbedTLong:
-		return visitor.AcceptLong()
+		return visitor.AcceptLong(ttype)
 	case mustEmbedTFloat:
-		return visitor.AcceptFloat()
+		return visitor.AcceptFloat(ttype)
 	case mustEmbedTDouble:
-		return visitor.AcceptDouble()
+		return visitor.AcceptDouble(ttype)
 	case mustEmbedTEnum:
-		return visitor.AcceptEnum()
+		return visitor.AcceptEnum(ttype)
 	case mustEmbedTString:
-		return visitor.AcceptString()
+		return visitor.AcceptString(ttype)
 	case mustEmbedTDateTime:
-		return visitor.AcceptDateTime()
+		return visitor.AcceptDateTime(ttype)
 	case mustEmbedTBean:
-		return visitor.AcceptBean()
+		return visitor.AcceptBean(ttype)
 	case mustEmbedTArray:
-		return visitor.AcceptArray()
+		return visitor.AcceptArray(ttype)
 	case mustEmbedTList:
-		return visitor.AcceptList()
+		return visitor.AcceptList(ttype)
 	case mustEmbedTSet:
-		return visitor.AcceptSet()
+		return visitor.AcceptSet(ttype)
 	case mustEmbedTMap:
-		return visitor.AcceptMap()
+		return visitor.AcceptMap(ttype)
 	default:
 		panic("not support type: " + ttype.TypeName())
 	}
@@ -48,55 +48,55 @@ func DispatchAccept0[R DType](visitor ITypeVisitor0[R], ttype TType) R {
 
 type ITypeVisitor0[R DType] interface {
 	ITypeVisitor
-	AcceptBool() R
-	AcceptByte() R
-	AcceptShort() R
-	AcceptInt() R
-	AcceptLong() R
-	AcceptFloat() R
-	AcceptDouble() R
-	AcceptEnum() R
-	AcceptString() R
-	AcceptDateTime() R
-	AcceptBean() R
-	AcceptArray() R
-	AcceptList() R
-	AcceptSet() R
-	AcceptMap() R
+	AcceptBool(TType) R
+	AcceptByte(TType) R
+	AcceptShort(TType) R
+	AcceptInt(TType) R
+	AcceptLong(TType) R
+	AcceptFloat(TType) R
+	AcceptDouble(TType) R
+	AcceptEnum(TType) R
+	AcceptString(TType) R
+	AcceptDateTime(TType) R
+	AcceptBean(TType) R
+	AcceptArray(TType) R
+	AcceptList(TType) R
+	AcceptSet(TType) R
+	AcceptMap(TType) R
 }
 
 func DispatchAccept1[T any, R DType](visitor ITypeVisitor1[T, R], ttype TType, t T) R {
 	switch ttype.(type) {
 	case mustEmbedTBool:
-		return visitor.AcceptBool(t)
+		return visitor.AcceptBool(ttype, t)
 	case mustEmbedTByte:
-		return visitor.AcceptByte(t)
+		return visitor.AcceptByte(ttype, t)
 	case mustEmbedTShort:
-		return visitor.AcceptShort(t)
+		return visitor.AcceptShort(ttype, t)
 	case mustEmbedTInt:
-		return visitor.AcceptInt(t)
+		return visitor.AcceptInt(ttype, t)
 	case mustEmbedTLong:
-		return visitor.AcceptLong(t)
+		return visitor.AcceptLong(ttype, t)
 	case mustEmbedTFloat:
-		return visitor.AcceptFloat(t)
+		return visitor.AcceptFloat(ttype, t)
 	case mustEmbedTDouble:
-		return visitor.AcceptDouble(t)
+		return visitor.AcceptDouble(ttype, t)
 	case mustEmbedTEnum:
-		return visitor.AcceptEnum(t)
+		return visitor.AcceptEnum(ttype, t)
 	case mustEmbedTString:
-		return visitor.AcceptString(t)
+		return visitor.AcceptString(ttype, t)
 	case mustEmbedTDateTime:
-		return visitor.AcceptDateTime(t)
+		return visitor.AcceptDateTime(ttype, t)
 	case mustEmbedTBean:
-		return visitor.AcceptBean(t)
+		return visitor.AcceptBean(ttype, t)
 	case mustEmbedTArray:
-		return visitor.AcceptArray(t)
+		return visitor.AcceptArray(ttype, t)
 	case mustEmbedTList:
-		return visitor.AcceptList(t)
+		return visitor.AcceptList(ttype, t)
 	case mustEmbedTSet:
-		return visitor.AcceptSet(t)
+		return visitor.AcceptSet(ttype, t)
 	case mustEmbedTMap:
-		return visitor.AcceptMap(t)
+		return visitor.AcceptMap(ttype, t)
 	default:
 		panic("not support type: " + ttype.TypeName())
 	}
@@ -104,55 +104,55 @@ func DispatchAccept1[T any, R DType](visitor ITypeVisitor1[T, R], ttype TType, t
 
 type ITypeVisitor1[T any, R DType] interface {
 	ITypeVisitor
-	AcceptBool(T) R
-	AcceptByte(T) R
-	AcceptShort(T) R
-	AcceptInt(T) R
-	AcceptLong(T) R
-	AcceptFloat(T) R
-	AcceptDouble(T) R
-	AcceptEnum(T) R
-	AcceptString(T) R
-	AcceptDateTime(T) R
-	AcceptBean(T) R
-	AcceptArray(T) R
-	AcceptList(T) R
-	AcceptSet(T) R
-	AcceptMap(T) R
+	AcceptBool(TType, T) R
+	AcceptByte(TType, T) R
+	AcceptShort(TType, T) R
+	AcceptInt(TType, T) R
+	AcceptLong(TType, T) R
+	AcceptFloat(TType, T) R
+	AcceptDouble(TType, T) R
+	AcceptEnum(TType, T) R
+	AcceptString(TType, T) R
+	AcceptDateTime(TType, T) R
+	AcceptBean(TType, T) R
+	AcceptArray(TType, T) R
+	AcceptList(TType, T) R
+	AcceptSet(TType, T) R
+	AcceptMap(TType, T) R
 }
 
 func DispatchAccept2[T, S any, R DType](visitor ITypeVisitor2[T, S, R], ttype TType, t T, s S) R {
 	switch ttype.(type) {
 	case mustEmbedTBool:
-		return visitor.AcceptBool(t, s)
+		return visitor.AcceptBool(ttype, t, s)
 	case mustEmbedTByte:
-		return visitor.AcceptByte(t, s)
+		return visitor.AcceptByte(ttype, t, s)
 	case mustEmbedTShort:
-		return visitor.AcceptShort(t, s)
+		return visitor.AcceptShort(ttype, t, s)
 	case mustEmbedTInt:
-		return visitor.AcceptInt(t, s)
+		return visitor.AcceptInt(ttype, t, s)
 	case mustEmbedTLong:
-		return visitor.AcceptLong(t, s)
+		return visitor.AcceptLong(ttype, t, s)
 	case mustEmbedTFloat:
-		return visitor.AcceptFloat(t, s)
+		return visitor.AcceptFloat(ttype, t, s)
 	case mustEmbedTDouble:
-		return visitor.AcceptDouble(t, s)
+		return visitor.AcceptDouble(ttype, t, s)
 	case mustEmbedTEnum:
-		return visitor.AcceptEnum(t, s)
+		return visitor.AcceptEnum(ttype, t, s)
 	case mustEmbedTString:
-		return visitor.AcceptString(t, s)
+		return visitor.AcceptString(ttype, t, s)
 	case mustEmbedTDateTime:
-		return visitor.AcceptDateTime(t, s)
+		return visitor.AcceptDateTime(ttype, t, s)
 	case mustEmbedTBean:
-		return visitor.AcceptBean(t, s)
+		return visitor.AcceptBean(ttype, t, s)
 	case mustEmbedTArray:
-		return visitor.AcceptArray(t, s)
+		return visitor.AcceptArray(ttype, t, s)
 	case mustEmbedTList:
-		return visitor.AcceptList(t, s)
+		return visitor.AcceptList(ttype, t, s)
 	case mustEmbedTSet:
-		return visitor.AcceptSet(t, s)
+		return visitor.AcceptSet(ttype, t, s)
 	case mustEmbedTMap:
-		return visitor.AcceptMap(t, s)
+		return visitor.AcceptMap(ttype, t, s)
 	default:
 		panic("not support type: " + ttype.TypeName())
 	}
@@ -160,55 +160,55 @@ func DispatchAccept2[T, S any, R DType](visitor ITypeVisitor2[T, S, R], ttype TT
 
 type ITypeVisitor2[T, S any, R DType] interface {
 	ITypeVisitor
-	AcceptBool(T, S) R
-	AcceptByte(T, S) R
-	AcceptShort(T, S) R
-	AcceptInt(T, S) R
-	AcceptLong(T, S) R
-	AcceptFloat(T, S) R
-	AcceptDouble(T, S) R
-	AcceptEnum(T, S) R
-	AcceptString(T, S) R
-	AcceptDateTime(T, S) R
-	AcceptBean(T, S) R
-	AcceptArray(T, S) R
-	AcceptList(T, S) R
-	AcceptSet(T, S) R
-	AcceptMap(T, S) R
+	AcceptBool(TType, T, S) R
+	AcceptByte(TType, T, S) R
+	AcceptShort(TType, T, S) R
+	AcceptInt(TType, T, S) R
+	AcceptLong(TType, T, S) R
+	AcceptFloat(TType, T, S) R
+	AcceptDouble(TType, T, S) R
+	AcceptEnum(TType, T, S) R
+	AcceptString(TType, T, S) R
+	AcceptDateTime(TType, T, S) R
+	AcceptBean(TType, T, S) R
+	AcceptArray(TType, T, S) R
+	AcceptList(TType, T, S) R
+	AcceptSet(TType, T, S) R
+	AcceptMap(TType, T, S) R
 }
 
 func DispatchAccept3[T, S, U any, R DType](visitor ITypeVisitor3[T, S, U, R], ttype TType, t T, s S, u U) R {
 	switch ttype.(type) {
 	case mustEmbedTBool:
-		return visitor.AcceptBool(t, s, u)
+		return visitor.AcceptBool(ttype, t, s, u)
 	case mustEmbedTByte:
-		return visitor.AcceptByte(t, s, u)
+		return visitor.AcceptByte(ttype, t, s, u)
 	case mustEmbedTShort:
-		return visitor.AcceptShort(t, s, u)
+		return visitor.AcceptShort(ttype, t, s, u)
 	case mustEmbedTInt:
-		return visitor.AcceptInt(t, s, u)
+		return visitor.AcceptInt(ttype, t, s, u)
 	case mustEmbedTLong:
-		return visitor.AcceptLong(t, s, u)
+		return visitor.AcceptLong(ttype, t, s, u)
 	case mustEmbedTFloat:
-		return visitor.AcceptFloat(t, s, u)
+		return visitor.AcceptFloat(ttype, t, s, u)
 	case mustEmbedTDouble:
-		return visitor.AcceptDouble(t, s, u)
+		return visitor.AcceptDouble(ttype, t, s, u)
 	case mustEmbedTEnum:
-		return visitor.AcceptEnum(t, s, u)
+		return visitor.AcceptEnum(ttype, t, s, u)
 	case mustEmbedTString:
-		return visitor.AcceptString(t, s, u)
+		return visitor.AcceptString(ttype, t, s, u)
 	case mustEmbedTDateTime:
-		return visitor.AcceptDateTime(t, s, u)
+		return visitor.AcceptDateTime(ttype, t, s, u)
 	case mustEmbedTBean:
-		return visitor.AcceptBean(t, s, u)
+		return visitor.AcceptBean(ttype, t, s, u)
 	case mustEmbedTArray:
-		return visitor.AcceptArray(t, s, u)
+		return visitor.AcceptArray(ttype, t, s, u)
 	case mustEmbedTList:
-		return visitor.AcceptList(t, s, u)
+		return visitor.AcceptList(ttype, t, s, u)
 	case mustEmbedTSet:
-		return visitor.AcceptSet(t, s, u)
+		return visitor.AcceptSet(ttype, t, s, u)
 	case mustEmbedTMap:
-		return visitor.AcceptMap(t, s, u)
+		return visitor.AcceptMap(ttype, t, s, u)
 	default:
 		panic("not support type: " + ttype.TypeName())
 	}
@@ -216,55 +216,55 @@ func DispatchAccept3[T, S, U any, R DType](visitor ITypeVisitor3[T, S, U, R], tt
 
 type ITypeVisitor3[T, S, U any, R DType] interface {
 	ITypeVisitor
-	AcceptBool(T, S, U) R
-	AcceptByte(T, S, U) R
-	AcceptShort(T, S, U) R
-	AcceptInt(T, S, U) R
-	AcceptLong(T, S, U) R
-	AcceptFloat(T, S, U) R
-	AcceptDouble(T, S, U) R
-	AcceptEnum(T, S, U) R
-	AcceptString(T, S, U) R
-	AcceptDateTime(T, S, U) R
-	AcceptBean(T, S, U) R
-	AcceptArray(T, S, U) R
-	AcceptList(T, S, U) R
-	AcceptSet(T, S, U) R
-	AcceptMap(T, S, U) R
+	AcceptBool(TType, T, S, U) R
+	AcceptByte(TType, T, S, U) R
+	AcceptShort(TType, T, S, U) R
+	AcceptInt(TType, T, S, U) R
+	AcceptLong(TType, T, S, U) R
+	AcceptFloat(TType, T, S, U) R
+	AcceptDouble(TType, T, S, U) R
+	AcceptEnum(TType, T, S, U) R
+	AcceptString(TType, T, S, U) R
+	AcceptDateTime(TType, T, S, U) R
+	AcceptBean(TType, T, S, U) R
+	AcceptArray(TType, T, S, U) R
+	AcceptList(TType, T, S, U) R
+	AcceptSet(TType, T, S, U) R
+	AcceptMap(TType, T, S, U) R
 }
 
 func DispatchAccept4[T, S, U, V any, R DType](visitor ITypeVisitor4[T, S, U, V, R], ttype TType, t T, s S, u U, v V) R {
 	switch ttype.(type) {
 	case mustEmbedTBool:
-		return visitor.AcceptBool(t, s, u, v)
+		return visitor.AcceptBool(ttype, t, s, u, v)
 	case mustEmbedTByte:
-		return visitor.AcceptByte(t, s, u, v)
+		return visitor.AcceptByte(ttype, t, s, u, v)
 	case mustEmbedTShort:
-		return visitor.AcceptShort(t, s, u, v)
+		return visitor.AcceptShort(ttype, t, s, u, v)
 	case mustEmbedTInt:
-		return visitor.AcceptInt(t, s, u, v)
+		return visitor.AcceptInt(ttype, t, s, u, v)
 	case mustEmbedTLong:
-		return visitor.AcceptLong(t, s, u, v)
+		return visitor.AcceptLong(ttype, t, s, u, v)
 	case mustEmbedTFloat:
-		return visitor.AcceptFloat(t, s, u, v)
+		return visitor.AcceptFloat(ttype, t, s, u, v)
 	case mustEmbedTDouble:
-		return visitor.AcceptDouble(t, s, u, v)
+		return visitor.AcceptDouble(ttype, t, s, u, v)
 	case mustEmbedTEnum:
-		return visitor.AcceptEnum(t, s, u, v)
+		return visitor.AcceptEnum(ttype, t, s, u, v)
 	case mustEmbedTString:
-		return visitor.AcceptString(t, s, u, v)
+		return visitor.AcceptString(ttype, t, s, u, v)
 	case mustEmbedTDateTime:
-		return visitor.AcceptDateTime(t, s, u, v)
+		return visitor.AcceptDateTime(ttype, t, s, u, v)
 	case mustEmbedTBean:
-		return visitor.AcceptBean(t, s, u, v)
+		return visitor.AcceptBean(ttype, t, s, u, v)
 	case mustEmbedTArray:
-		return visitor.AcceptArray(t, s, u, v)
+		return visitor.AcceptArray(ttype, t, s, u, v)
 	case mustEmbedTList:
-		return visitor.AcceptList(t, s, u, v)
+		return visitor.AcceptList(ttype, t, s, u, v)
 	case mustEmbedTSet:
-		return visitor.AcceptSet(t, s, u, v)
+		return visitor.AcceptSet(ttype, t, s, u, v)
 	case mustEmbedTMap:
-		return visitor.AcceptMap(t, s, u, v)
+		return visitor.AcceptMap(ttype, t, s, u, v)
 	default:
 		panic("not support type: " + ttype.TypeName())
 	}
@@ -272,21 +272,21 @@ func DispatchAccept4[T, S, U, V any, R DType](visitor ITypeVisitor4[T, S, U, V, 
 
 type ITypeVisitor4[T, S, U, V any, R DType] interface {
 	ITypeVisitor
-	AcceptBool(T, S, U, V) R
-	AcceptByte(T, S, U, V) R
-	AcceptShort(T, S, U, V) R
-	AcceptInt(T, S, U, V) R
-	AcceptLong(T, S, U, V) R
-	AcceptFloat(T, S, U, V) R
-	AcceptDouble(T, S, U, V) R
-	AcceptEnum(T, S, U, V) R
-	AcceptString(T, S, U, V) R
-	AcceptDateTime(T, S, U, V) R
-	AcceptBean(T, S, U, V) R
-	AcceptArray(T, S, U, V) R
-	AcceptList(T, S, U, V) R
-	AcceptSet(T, S, U, V) R
-	AcceptMap(T, S, U, V) R
+	AcceptBool(TType, T, S, U, V) R
+	AcceptByte(TType, T, S, U, V) R
+	AcceptShort(TType, T, S, U, V) R
+	AcceptInt(TType, T, S, U, V) R
+	AcceptLong(TType, T, S, U, V) R
+	AcceptFloat(TType, T, S, U, V) R
+	AcceptDouble(TType, T, S, U, V) R
+	AcceptEnum(TType, T, S, U, V) R
+	AcceptString(TType, T, S, U, V) R
+	AcceptDateTime(TType, T, S, U, V) R
+	AcceptBean(TType, T, S, U, V) R
+	AcceptArray(TType, T, S, U, V) R
+	AcceptList(TType, T, S, U, V) R
+	AcceptSet(TType, T, S, U, V) R
+	AcceptMap(TType, T, S, U, V) R
 }
 
 var (
