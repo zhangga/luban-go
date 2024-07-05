@@ -24,3 +24,20 @@ func (t *TitleRow) AsMultiRowConcatElements(sep string) *ExcelStream {
 	}
 	return NewExcelStreamByRows(rows, t.SelfTitle.FromIndex, t.SelfTitle.ToIndex, sep, t.SelfTitle.Default)
 }
+
+func (t *TitleRow) GetSubTitleNamedRow(name string) *TitleRow {
+	return t.Fields[name]
+}
+
+func (t *TitleRow) Current() string {
+	if t.Row == nil {
+		panic("简单数据类型字段 不支持子列名或者多行")
+	}
+
+	v, ok := t.Row[t.SelfTitle.FromIndex].Value()
+	if !ok || (len(v) == 0 && len(t.SelfTitle.Default) != 0) {
+		return t.SelfTitle.Default
+	} else {
+		return v
+	}
+}

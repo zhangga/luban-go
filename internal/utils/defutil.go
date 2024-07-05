@@ -2,6 +2,10 @@ package utils
 
 import "strings"
 
+const (
+	attrSep = "#"
+)
+
 func ParseAttrs(tags string) map[string]string {
 	attrs := make(map[string]string)
 	if len(tags) == 0 {
@@ -81,4 +85,75 @@ func TrimBracePairs(rawPair string) string {
 
 func IsNormalFieldName(name string) bool {
 	return !strings.HasPrefix(name, "__") && !strings.HasPrefix(name, "#") && !strings.HasPrefix(name, "$")
+}
+
+func IndexOfBaseTypeEnd(s string) int {
+	braceDepth := 0
+	firstSharpIndex := -1 // '#'
+	for i, c := range s {
+		switch c {
+		case '(', '[', '{':
+			braceDepth++
+		case ')', ']', '}':
+			braceDepth--
+		}
+		if c == '#' && firstSharpIndex == -1 {
+			firstSharpIndex = i
+		}
+
+		if braceDepth == 0 && (c == ',' || c == ';') {
+			var strContainBaseType string
+			if firstSharpIndex > 0 {
+				strContainBaseType = s[:firstSharpIndex]
+			} else {
+				strContainBaseType = s[:i]
+			}
+			strContainBaseType = strings.ReplaceAll(strContainBaseType, "(", "")
+			strContainBaseType = strings.ReplaceAll(strContainBaseType, ")", "")
+			strContainBaseType = strings.ReplaceAll(strContainBaseType, "[", "")
+			strContainBaseType = strings.ReplaceAll(strContainBaseType, "]", "")
+
+			if strContainBaseType == "array" || strContainBaseType == "list" || strContainBaseType == "set" || strContainBaseType == "map" {
+				return i
+			} else {
+				return -1
+			}
+		}
+	}
+	return -1
+}
+
+func ParseType(s string) (string, map[string]string) {
+	sepIndex := strings.IndexAny(s, attrSep)
+	if sepIndex < 0 {
+		return s, map[string]string{}
+	} else {
+		braceDepth := 0
+		for i, c := range s {
+			switch c {
+			case '(', '[', '{':
+				braceDepth++
+			case ')', ']', '}':
+				braceDepth--
+			}
+
+			if braceDepth == 0 && c == '#' {
+				return s[:i], ParseAttrs(s[i+1:])
+			}
+		}
+		return s, make(map[string]string)
+	}
+}
+
+func ParseTypeAndValidAttrs(s string) (string, map[string]string) {
+	typeStr, attrs := ParseType(s)
+	if len(attrs) > 0 {
+		if _, ok := attrs["group"]; ok {
+			panic("group为保留属性,只能用于table或var定义,是否用错? 如在excel中请使用&group=xxx")
+		}
+		if _, ok := attrs["seq"]; ok {
+			panic("字段切割应该用'sep'，而不是'seq',请检查是否拼写错误")
+		}
+	}
+	return typeStr, attrs
 }

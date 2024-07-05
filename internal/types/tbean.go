@@ -13,11 +13,14 @@ type TBean struct {
 	DefBean *defs.DefBean
 }
 
-func NewTBean(defBean *defs.DefBean, isNullable bool, tags map[string]string) *TBean {
-	return &TBean{
+func NewTBean(isNullable bool, tags map[string]string, def refs.IDefType, typ ...refs.TType) refs.TType {
+	bean := &TBean{
 		EmbedTType: refs.NewEmbedTType(isNullable, tags),
-		DefBean:    defBean,
 	}
+	if def != nil {
+		bean.DefBean = def.(*defs.DefBean)
+	}
+	return bean
 }
 
 func (b *TBean) TypeName() string {
@@ -29,8 +32,7 @@ func (b *TBean) IsBean() bool {
 }
 
 func (b *TBean) IsNullable() bool {
-	//TODO implement me
-	panic("implement me")
+	return b.EmbedTType.IsNullable
 }
 
 func (b *TBean) TryParseFrom(s string) bool {

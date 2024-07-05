@@ -19,6 +19,7 @@ import (
 	validator2 "github.com/zhangga/luban/internal/validator"
 
 	_ "github.com/zhangga/luban/internal/dataloader/visitors"
+	_ "github.com/zhangga/luban/internal/types"
 )
 
 // init 注册管理器

@@ -66,7 +66,7 @@ func (e *ExcelSchemaLoader) loadTableListFromFile(ctx pctx.Context, fileName str
 	defTableRecordType.Compile(ctx)
 	defTableRecordType.PostCompile(ctx)
 
-	tableRecordType := types.NewTBean(defTableRecordType, false, nil)
+	tableRecordType := types.NewTBean(false, nil, defTableRecordType)
 	actualFile, sheetName := utils.SplitFileAndSheetName(utils.StandardizePath(fileName))
 	// 读取table数据
 	records, err := manager.MustGetIface[manager.IDataLoaderManager]().LoadTableFile(tableRecordType, actualFile, sheetName, nil)

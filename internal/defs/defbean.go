@@ -23,7 +23,7 @@ type DefBean struct {
 	IsValueType                  bool
 	Children                     []*DefBean
 	HierarchyNotAbstractChildren []*DefBean
-	HierarchyFields              []*DefField
+	HierarchyFields              []*DefField // 父类+自身的所有字段
 	Fields                       []*DefField
 	hierarchyExportFields        []*DefField
 	exportFields                 []*DefField
@@ -141,11 +141,13 @@ func (b *DefBean) CollectHierarchyNotAbstractChildren(children []*DefBean) {
 	}
 }
 
-func (b *DefBean) CollectHierarchyFields(fields []*DefField) {
+func (b *DefBean) CollectHierarchyFields() []*DefField {
+	var fields []*DefField
 	if b.ParentDefType != nil {
-		b.ParentDefType.CollectHierarchyFields(fields)
+		fields = append(fields, b.ParentDefType.CollectHierarchyFields()...)
 	}
 	fields = append(fields, b.Fields...)
+	return fields
 }
 
 func (b *DefBean) SetupParentRecursively() {
@@ -169,7 +171,7 @@ func (b *DefBean) SetupParentRecursively() {
 func (b *DefBean) PreCompile(ctx pctx.Context) {
 	b.DefTypeBase.PreCompile(ctx)
 	b.SetupParentRecursively()
-	b.CollectHierarchyFields(b.HierarchyFields)
+	b.HierarchyFields = b.CollectHierarchyFields()
 }
 
 func (b *DefBean) Compile(ctx pctx.Context) {
@@ -205,4 +207,20 @@ func (b *DefBean) PostCompile(ctx pctx.Context) {
 			autoId++
 		}
 	}
+}
+
+func GetImplTypeByNameOrAlias(bean *DefBean, subType string) *DefBean {
+	if len(subType) == 0 {
+		panic(fmt.Errorf("module: %s, 多态数据type不能为空", bean.Namespace()))
+	}
+	defType := utils.FirstOfList(bean.HierarchyNotAbstractChildren, func(child *DefBean) bool {
+		return child.Name == subType || child.Alias == subType || child.FullName() == subType
+	})
+	if defType == nil {
+		panic(fmt.Errorf("module: %s, 多态数据type: %s 不存在", bean.Namespace(), subType))
+	}
+	if defType.IsAbstractType() {
+		panic(fmt.Errorf("module: %s, 多态数据type: %s 是抽象类型. 不能创建实例", bean.Namespace(), subType))
+	}
+	return defType
 }

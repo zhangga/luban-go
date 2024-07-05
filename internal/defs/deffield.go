@@ -74,6 +74,7 @@ func (f *DefField) String() string {
 }
 
 func (f *DefField) Compile(ctx pctx.Context) {
+	f.CType = f.Assembly.CreateType(f.HostType.Namespace(), f.Type, false)
 	panic("implement me")
 }
 

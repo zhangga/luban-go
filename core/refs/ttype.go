@@ -1,5 +1,9 @@
 package refs
 
+import (
+	"sync"
+)
+
 // TType types类型接口
 type TType interface {
 	TypeName() string // 类型名称
@@ -54,4 +58,31 @@ func (t *EmbedTType) GetTagOrDefault(attrName, defaultValue string) string {
 		return defaultValue
 	}
 	return v
+}
+
+type TypeCreator func(nullable bool, tags map[string]string, def IDefType, typ ...TType) TType
+
+var (
+	typeCreators = map[string]TypeCreator{}
+	typeLocker   sync.RWMutex
+)
+
+func RegisterTypeCreator(creator TypeCreator) {
+	// 创建实例
+	instance := creator(false, nil, nil)
+	typeLocker.Lock()
+	defer typeLocker.Unlock()
+	if _, ok := typeCreators[instance.TypeName()]; ok {
+		panic("type creator: " + instance.TypeName() + " already registered")
+	}
+	typeCreators[instance.TypeName()] = creator
+}
+
+func GetTypeCreator(name string) TypeCreator {
+	typeLocker.RLock()
+	defer typeLocker.RUnlock()
+	if creator, ok := typeCreators[name]; ok {
+		return creator
+	}
+	return nil
 }

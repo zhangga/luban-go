@@ -24,6 +24,12 @@ type DefAssembly struct {
 	TablesByName           map[string]*DefTable
 	TablesByFullName       map[string]*DefTable
 	exportTables           []*DefTable
+	cacheDefTTypes         map[cacheDefKey]refs.TType
+}
+
+type cacheDefKey struct {
+	def      refs.IDefType
+	nullable bool
 }
 
 func NewDefAssembly(ctx pctx.Context, logger logger.Logger, rawAssembly *rawdefs.RawAssembly, target string, outputTables []string) *DefAssembly {
@@ -180,4 +186,120 @@ func (a *DefAssembly) GetDefType(moduleName, typeName string) refs.IDefType {
 		return defType
 	}
 	return nil
+}
+
+func (a *DefAssembly) GetTType(moduleName, typeName string, nullable bool, tags map[string]string) refs.TType {
+	defType := a.GetDefType(moduleName, typeName)
+	switch d := defType.(type) {
+	case *DefBean:
+		return a.GetOrCreateTBean(d, nullable, tags)
+	case *DefEnum:
+		return a.GetOrCreateTEnum(d, nullable, tags)
+	}
+	return nil
+}
+
+func (a *DefAssembly) GetOrCreateTBean(bean *DefBean, nullable bool, tags map[string]string) refs.TType {
+	if len(tags) == 0 {
+		if t, ok := a.cacheDefTTypes[cacheDefKey{def: bean, nullable: nullable}]; ok {
+			return t
+		}
+		tbean := refs.GetTypeCreator("bean")(nullable, tags, bean)
+		a.cacheDefTTypes[cacheDefKey{def: bean, nullable: nullable}] = tbean
+		return tbean
+	} else {
+		refs.GetTypeCreator("bean")(nullable, tags, bean)
+	}
+	return nil
+}
+
+func (a *DefAssembly) GetOrCreateTEnum(enum *DefEnum, nullable bool, tags map[string]string) refs.TType {
+	if len(tags) == 0 {
+		if t, ok := a.cacheDefTTypes[cacheDefKey{def: enum, nullable: nullable}]; ok {
+			return t
+		}
+		tenum := refs.GetTypeCreator("enum")(nullable, tags, enum)
+		a.cacheDefTTypes[cacheDefKey{def: enum, nullable: nullable}] = tenum
+		return tenum
+	} else {
+		refs.GetTypeCreator("enum")(nullable, tags, enum)
+	}
+	return nil
+}
+
+func (a *DefAssembly) CreateType(module, name string, containerElementType bool) refs.TType {
+	name = utils.TrimBracePairs(name)
+	if sepIndex := utils.IndexOfBaseTypeEnd(name); sepIndex > 0 {
+		containerTypeAndTags := utils.TrimBracePairs(name[:sepIndex])
+		elementTypeAndTags := strings.TrimSpace(name[sepIndex+1:])
+		containerType, containerTags := utils.ParseTypeAndValidAttrs(containerTypeAndTags)
+		return a.CreateContainerType(module, containerType, containerTags, elementTypeAndTags)
+	} else {
+		return a.CreateNotContainerType(module, name, containerElementType)
+	}
+}
+
+// CreateNotContainerType 创建非容器类型
+func (a *DefAssembly) CreateNotContainerType(module, name string, containerElementType bool) refs.TType {
+	defaultable, nullable := true, false
+	// 去掉rawType两侧匹配的()
+	rawType := utils.TrimBracePairs(name)
+	typ, tags := utils.ParseTypeAndValidAttrs(rawType)
+	for {
+		if strings.HasSuffix(typ, "?") {
+			if containerElementType {
+				panic(fmt.Errorf("container element type can't be nullable type: %s.%s", module, typ))
+			}
+			nullable = true
+			typ = typ[:len(typ)-1]
+			continue
+		}
+		if strings.HasSuffix(typ, "!") {
+			defaultable = false
+			typ = typ[:len(typ)-1]
+			continue
+		}
+		break
+	}
+
+	if !defaultable {
+		if _, ok := tags["not-default"]; !ok {
+			tags["not-default"] = "1"
+		}
+	}
+
+	switch typ {
+	case "bool":
+		return refs.GetTypeCreator("bool")(nullable, tags, nil)
+	case "int8", "byte":
+		return refs.GetTypeCreator("byte")(nullable, tags, nil)
+	case "int16", "short":
+		return refs.GetTypeCreator("short")(nullable, tags, nil)
+	case "int32", "int":
+		return refs.GetTypeCreator("int")(nullable, tags, nil)
+	case "int64", "long":
+		return refs.GetTypeCreator("long")(nullable, tags, nil)
+	case "float32", "float":
+		return refs.GetTypeCreator("float")(nullable, tags, nil)
+	case "float64", "double":
+		return refs.GetTypeCreator("double")(nullable, tags, nil)
+	case "string":
+		return refs.GetTypeCreator("string")(nullable, tags, nil)
+	case "text":
+		tags["text"] = "1"
+		return refs.GetTypeCreator("string")(nullable, tags, nil)
+	case "time", "datetime":
+		return refs.GetTypeCreator("datetime")(nullable, tags, nil)
+	default:
+		if dtype := a.GetTType(module, typ, nullable, tags); dtype != nil {
+			return dtype
+		} else {
+			panic(fmt.Errorf("invalid type, module: %s, type: %s", module, typ))
+		}
+	}
+}
+
+// CreateContainerType 创建容器类型
+func (a *DefAssembly) CreateContainerType(module, containerType string, containerTags map[string]string, elementType string) refs.TType {
+	panic("implement me")
 }
