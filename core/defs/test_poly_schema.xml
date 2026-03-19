@@ -1,0 +1,16 @@
+<module name="demo">
+    <bean name="Shape">
+        <var name="Id" type="int"/>
+    </bean>
+
+    <bean name="Circle" parent="Shape">
+        <var name="Radius" type="float"/>
+    </bean>
+
+    <bean name="Rectangle" parent="Shape">
+        <var name="Width" type="float"/>
+        <var name="Height" type="float"/>
+    </bean>
+
+    <table name="TbShape" value="Shape" mode="map" index="Id"/>
+</module>

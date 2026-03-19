@@ -1,0 +1,135 @@
+package datatarget
+
+import (
+	"fmt"
+	"github.com/zhangga/luban-go/core/datas"
+	"github.com/zhangga/luban-go/core/defs"
+)
+
+// ToJsonVisitor 是一个实现 IDataVisitor 接口的访问者，将 DType 转换为可以被 json.Marshal 的对象
+type ToJsonVisitor struct{}
+
+func NewToJsonVisitor() *ToJsonVisitor {
+	return &ToJsonVisitor{}
+}
+
+func (v *ToJsonVisitor) VisitDBool(d *datas.DBool) interface{} {
+	return d.Value
+}
+
+func (v *ToJsonVisitor) VisitDByte(d *datas.DByte) interface{} {
+	return d.Value
+}
+
+func (v *ToJsonVisitor) VisitDShort(d *datas.DShort) interface{} {
+	return d.Value
+}
+
+func (v *ToJsonVisitor) VisitDInt(d *datas.DInt) interface{} {
+	return d.Value
+}
+
+func (v *ToJsonVisitor) VisitDLong(d *datas.DLong) interface{} {
+	return d.Value
+}
+
+func (v *ToJsonVisitor) VisitDFloat(d *datas.DFloat) interface{} {
+	return d.Value
+}
+
+func (v *ToJsonVisitor) VisitDDouble(d *datas.DDouble) interface{} {
+	return d.Value
+}
+
+func (v *ToJsonVisitor) VisitDString(d *datas.DString) interface{} {
+	return d.Value
+}
+
+func (v *ToJsonVisitor) VisitDEnum(d *datas.DEnum) interface{} {
+	if d.StrValue != "" {
+		return d.StrValue
+	}
+	return d.Value
+}
+
+func (v *ToJsonVisitor) VisitDBean(d *datas.DBean) interface{} {
+	m := make(map[string]interface{})
+
+	// 处理多态标识 ($type)
+	if d.Type.IsDynamic() && d.ImplType != nil {
+		m["$type"] = d.ImplType.DefBean.Name()
+	}
+
+	implBean := d.Type
+	if d.ImplType != nil {
+		implBean = d.ImplType
+	}
+
+	if implBean != nil && implBean.DefBean != nil {
+		if beanImpl, ok := implBean.DefBean.(*defs.DefBeanImpl); ok {
+			for i, field := range beanImpl.HierarchyFields {
+				if i < len(d.Fields) {
+					if d.Fields[i] != nil {
+						m[field.Raw.Name] = d.Fields[i].Accept(v)
+					}
+					// 只有显示声明为空的，或者不需要的我们可以忽略，或者保留原样
+				}
+			}
+		}
+	}
+	return m
+}
+
+func (v *ToJsonVisitor) VisitDArray(d *datas.DArray) interface{} {
+	arr := make([]interface{}, 0, len(d.Elements))
+	for _, e := range d.Elements {
+		if e != nil {
+			arr = append(arr, e.Accept(v))
+		} else {
+			arr = append(arr, nil)
+		}
+	}
+	return arr
+}
+
+func (v *ToJsonVisitor) VisitDList(d *datas.DList) interface{} {
+	arr := make([]interface{}, 0, len(d.Elements))
+	for _, e := range d.Elements {
+		if e != nil {
+			arr = append(arr, e.Accept(v))
+		} else {
+			arr = append(arr, nil)
+		}
+	}
+	return arr
+}
+
+func (v *ToJsonVisitor) VisitDSet(d *datas.DSet) interface{} {
+	arr := make([]interface{}, 0, len(d.Elements))
+	for _, e := range d.Elements {
+		if e != nil {
+			arr = append(arr, e.Accept(v))
+		} else {
+			arr = append(arr, nil)
+		}
+	}
+	return arr
+}
+
+func (v *ToJsonVisitor) VisitDMap(d *datas.DMap) interface{} {
+	m := make(map[string]interface{})
+	for k, val := range d.Datas {
+		// Map的Key在JSON中通常必须是字符串
+		keyStr := fmt.Sprintf("%v", k.Accept(v))
+		if val != nil {
+			m[keyStr] = val.Accept(v)
+		} else {
+			m[keyStr] = nil
+		}
+	}
+	return m
+}
+
+func (v *ToJsonVisitor) VisitDDateTime(d *datas.DDateTime) interface{} {
+	return d.String()
+}

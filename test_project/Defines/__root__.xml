@@ -1,0 +1,37 @@
+<module name="demo">
+    <enum name="ItemType">
+        <var name="Weapon" value="1"/>
+        <var name="Armor" value="2"/>
+    </enum>
+
+    <bean name="Item">
+        <var name="Id" type="int"/>
+        <var name="Name" type="string"/>
+        <var name="Desc" type="string"/>
+    </bean>
+
+    <table name="TbItem" value="Item" mode="map" index="Id"/>
+
+    <bean name="Shape">
+        <var name="Id" type="int"/>
+    </bean>
+
+    <bean name="Circle" parent="Shape">
+        <var name="Radius" type="float"/>
+    </bean>
+
+    <bean name="Rectangle" parent="Shape">
+        <var name="Width" type="float"/>
+        <var name="Height" type="float"/>
+    </bean>
+
+    <table name="TbShape" value="Shape" mode="map" index="Id"/>
+    <bean name="Bag">
+        <var name="Id" type="int"/>
+        <var name="Name" type="string"/>
+        <var name="PriceList" type="list,int"/>
+        <var name="PropMap" type="map,string,int"/>
+    </bean>
+
+    <table name="TbBag" value="Bag" mode="map" index="Id"/>
+</module>

@@ -1,0 +1,29 @@
+<module name="demo">
+    <enum name="Gender">
+        <var name="Male" value="1"/>
+        <var name="Female" value="2"/>
+    </enum>
+
+    <bean name="Item">
+        <var name="Id" type="int"/>
+        <var name="Name" type="string"/>
+        <var name="Price" type="float"/>
+    </bean>
+
+    <bean name="Shape">
+        <var name="Id" type="int"/>
+    </bean>
+
+    <bean name="Circle" parent="Shape">
+        <var name="Radius" type="float"/>
+    </bean>
+
+    <bean name="Rectangle" parent="Shape">
+        <var name="Width" type="float"/>
+        <var name="Height" type="float"/>
+    </bean>
+
+    <module name="sub">
+        <table name="TbItem" value="Item" mode="map" index="Id"/>
+    </module>
+</module>

@@ -1,2 +1,0 @@
-# luban_extend
-luban自定义扩展工程示例

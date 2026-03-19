@@ -1,0 +1,12 @@
+[
+  {
+    "Desc": "Legendary Sword",
+    "Id": 1001,
+    "Name": "Excalibur"
+  },
+  {
+    "Desc": "Basic Defense",
+    "Id": 1002,
+    "Name": "Iron Shield"
+  }
+]

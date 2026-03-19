@@ -1,0 +1,13 @@
+[
+  {
+    "$type": "Circle",
+    "Id": 101,
+    "Radius": 5.5
+  },
+  {
+    "$type": "Rectangle",
+    "Height": 20,
+    "Id": 102,
+    "Width": 10
+  }
+]
