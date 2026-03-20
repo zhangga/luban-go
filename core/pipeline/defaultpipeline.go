@@ -65,12 +65,25 @@ func (p *DefaultPipeline) Process(args *PipelineArguments) error {
 		// 假设数据文件在 args.InputDataDir 下与表名相同，不分大小写处理或直接映射
 		// 在我们的测试例子里表名叫 TbItem, 所以文件是 TbItem.xlsx
 		dataPath := filepath.Join(args.InputDataDir, "Datas", table.Name()+".xlsx")
-		fmt.Printf("Loading data for table %s from %s\n", table.Name(), dataPath)
+		csvDataPath := filepath.Join(args.InputDataDir, "Datas", table.Name()+".csv")
+		
+		var loader dataloader.IDataLoader
+		var loadPath string
+		var f *os.File
+		
 		if _, err := os.Stat(dataPath); err == nil {
-			f, _ := os.Open(dataPath)
-
-			loader := dataloader.NewExcelDataLoader(typeFactory)
-			if err := loader.Load(dataPath, "", f); err == nil {
+			f, _ = os.Open(dataPath)
+			loader = dataloader.NewExcelDataLoader(typeFactory)
+			loadPath = dataPath
+		} else if _, err := os.Stat(csvDataPath); err == nil {
+			f, _ = os.Open(csvDataPath)
+			loader = dataloader.NewCsvDataLoader(typeFactory)
+			loadPath = csvDataPath
+		}
+		
+		if loader != nil {
+			fmt.Printf("Loading data for table %s from %s\n", table.Name(), loadPath)
+			if err := loader.Load(loadPath, "", f); err == nil {
 				// 获取此表关联的 bean
 				tType, errType := defs.NewTTypeFactory(assembly).CreateType(table.Raw.ValueType)
 				if errType != nil {
@@ -86,11 +99,11 @@ func (p *DefaultPipeline) Process(args *PipelineArguments) error {
 					}
 				}
 			} else {
-				fmt.Printf("Failed to parse excel %s: %v\n", dataPath, err)
+				fmt.Printf("Failed to parse file %s: %v\n", loadPath, err)
 			}
 			f.Close()
 		} else {
-			fmt.Printf("Data file %s not found\n", dataPath)
+			fmt.Printf("Data file for table %s not found (tried .xlsx, .csv)\n", table.Name())
 		}
 	}
 
