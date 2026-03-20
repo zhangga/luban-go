@@ -6,6 +6,7 @@ import (
 
 	"github.com/zhangga/luban-go/core/datas"
 	"github.com/zhangga/luban-go/core/types"
+	"github.com/zhangga/luban-go/core/l10n"
 )
 
 // DataCreator 负责将字符串或 DataStream 转换为对应 TType 的 DType 数据
@@ -45,6 +46,9 @@ func (c *DataCreator) CreateData(t types.TType, stream *DataStream) (datas.DType
 		return datas.NewDDouble(float64(n)), nil
 	case *types.TString:
 		return datas.NewDString(str), nil
+	case *types.TText:
+		key := l10n.GetManager().AddText("", str)
+		return datas.NewDText(key, str), nil
 	case *types.TEnum:
 		// 枚举暂以 Int 形式兜底，也可以是 String
 		if n, err := strconv.ParseInt(str, 10, 32); err == nil {

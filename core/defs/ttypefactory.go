@@ -46,6 +46,8 @@ func (f *TTypeFactory) CreateType(typeStr string) (types.TType, error) {
 		return types.NewTDouble(false, nil), nil
 	case "string":
 		return types.NewTString(false, nil), nil
+	case "text":
+		return types.NewTText(false, nil), nil
 	case "datetime":
 		return types.NewTDateTime(false, nil), nil
 	case "array":

@@ -19,6 +19,8 @@ func luaTypeMapper(t string) string {
 		return "number"
 	case "string":
 		return "string"
+	case "text":
+		return "string"
 	}
 	
 	if strings.HasPrefix(t, "list,") || strings.HasPrefix(t, "array,") || strings.HasPrefix(t, "map,") || strings.HasPrefix(t, "set,") {

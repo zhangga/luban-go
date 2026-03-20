@@ -9,6 +9,7 @@ type IDataVisitor interface {
 	VisitDFloat(d *DFloat) interface{}
 	VisitDDouble(d *DDouble) interface{}
 	VisitDString(d *DString) interface{}
+	VisitDText(d *DText) interface{}
 	VisitDEnum(d *DEnum) interface{}
 	VisitDBean(d *DBean) interface{}
 	VisitDArray(d *DArray) interface{}

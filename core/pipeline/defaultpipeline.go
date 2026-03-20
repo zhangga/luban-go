@@ -13,6 +13,7 @@ import (
 	"github.com/zhangga/luban-go/core/validator"
 	"github.com/zhangga/luban-go/core/schema"
 	"github.com/zhangga/luban-go/core/types"
+	"github.com/zhangga/luban-go/core/l10n"
 )
 
 type DefaultPipeline struct {
@@ -158,6 +159,15 @@ func (p *DefaultPipeline) Process(args *PipelineArguments) error {
 
 	if err := target.Handle(assembly, manifest); err != nil {
 		return fmt.Errorf("failed to generate code: %w", err)
+	}
+
+	// 4.5 导出多语言文本 (如果使用了 text 类型)
+	fmt.Println("Step 4.5: Export l10n texts...")
+	l10nData, err := l10n.GetManager().Export()
+	if err != nil {
+		fmt.Printf("Warning: failed to export l10n data: %v\n", err)
+	} else if string(l10nData) != "{}" && string(l10nData) != "{\n}" { 
+		manifest.AddDataFile(codetarget.NewOutputFile("l10n.json", l10nData))
 	}
 
 	// 5. 导出数据 (DataTarget)

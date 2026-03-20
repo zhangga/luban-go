@@ -29,6 +29,8 @@ func javaTypeMapper(t string) string {
 		return "double"
 	case "string":
 		return "String"
+	case "text":
+		return "String"
 	}
 
 	// 泛型装箱类型（当作为集合元素时需要，这里简单起见，统一返回包装类如果在集合里，或者直接返回）

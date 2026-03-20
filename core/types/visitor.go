@@ -11,6 +11,7 @@ type ITypeVisitor interface {
 	VisitTFloat(t *TFloat) interface{}
 	VisitTDouble(t *TDouble) interface{}
 	VisitTString(t *TString) interface{}
+	VisitTText(t *TText) interface{}
 	VisitTEnum(t *TEnum) interface{}
 	VisitTBean(t *TBean) interface{}
 	VisitTArray(t *TArray) interface{}

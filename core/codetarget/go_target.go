@@ -96,6 +96,8 @@ func typeMapping(lubanType string) string {
 		return "bool"
 	case "string":
 		return "string"
+	case "text":
+		return "string" // text 在 Go 中也映射为 string，真实项目可能需要特定结构
 	default:
 		// 复杂类型（Bean 或 List 等）暂时原样返回或需要更复杂的映射解析
 		return lubanType

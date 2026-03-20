@@ -127,6 +127,13 @@ func (v *BinDataVisitor) VisitDString(d *datas.DString) interface{} {
 	return nil
 }
 
+func (v *BinDataVisitor) VisitDText(d *datas.DText) interface{} {
+	// Bin 格式写入两个字符串：key 和 text
+	v.buf.WriteString(d.Key)
+	v.buf.WriteString(d.RawText)
+	return nil
+}
+
 func (v *BinDataVisitor) VisitDEnum(d *datas.DEnum) interface{} {
 	v.buf.WriteInt(d.Value)
 	return nil

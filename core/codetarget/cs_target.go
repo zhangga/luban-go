@@ -35,6 +35,8 @@ func csTypeMapper(t string) string {
 		return "double"
 	case "string":
 		return "string"
+	case "text":
+		return "string"
 	}
 
 	// 处理集合类型，例如 list,int

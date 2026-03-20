@@ -29,6 +29,8 @@ func cppTypeMapper(t string) string {
 		return "double"
 	case "string":
 		return "std::string"
+	case "text":
+		return "std::string"
 	}
 
 	// 处理集合类型，例如 list,int

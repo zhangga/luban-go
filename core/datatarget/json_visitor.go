@@ -49,6 +49,19 @@ func (v *ToJsonVisitor) VisitDString(d *datas.DString) interface{} {
 	return d.Value
 }
 
+func (v *ToJsonVisitor) VisitDText(d *datas.DText) interface{} {
+	// 在 JSON 中导出，通常 text 可以导出为一个包含 key 的对象，或者直接导成文本 (取决于设置)
+	// 原版 Luban 中可以开启 l10n.textValueFieldName。这里我们简化处理，将其输出为对象或字符串
+	// 如果 Key 不为空，可以用 map 包含 key 和 text，否则只输出 text
+	if d.Key != "" {
+		m := make(map[string]interface{})
+		m["key"] = d.Key
+		m["text"] = d.RawText
+		return m
+	}
+	return d.RawText
+}
+
 func (v *ToJsonVisitor) VisitDEnum(d *datas.DEnum) interface{} {
 	if d.StrValue != "" {
 		return d.StrValue
