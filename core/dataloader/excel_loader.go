@@ -114,12 +114,26 @@ func (l *ExcelDataLoader) ReadMulti(t *types.TBean) []*defs.Record {
 		}
 		fmt.Printf("DEBUG headers mapping: %v\n", fieldIndices)
 
+		// 找出主键列（通常是第一列，或者通过一些方式指定，这里简单取第一列不是 ## 且非空的第一个有效字段的列号，或者干脆默认 Id 的列，或者默认非忽略的第一列）
+		// 在这里，如果一个数据行除了控制列外，前几列（或者是主键列）为空，则认为是多行延续。
+		// 更好的策略：如果发现当前行的“主键”为空，则合并到上一行。
+		// 我们假设 $type 和 第一个字段 为关键列。如果有，且均为空，则为多行。
+		
+		var primaryColIdx = -1
+		if len(t.DefBean.(*defs.DefBeanImpl).HierarchyFields) > 0 {
+			firstFieldName := t.DefBean.(*defs.DefBeanImpl).HierarchyFields[0].Raw.Name
+			if idxs, ok := fieldIndices[firstFieldName]; ok && len(idxs) > 0 {
+				primaryColIdx = idxs[0]
+			}
+		}
+
 		// 迭代每一行数据 (从表头行的下一行开始)
-		for i := headerRowIndex + 1; i < len(sheet.Cells); i++ {
+		for i := headerRowIndex + 1; i < len(sheet.Cells); {
 			row := sheet.Cells[i]
 
 			// 过滤空行
 			if len(row) == 0 {
+				i++
 				continue
 			}
 
@@ -127,6 +141,7 @@ func (l *ExcelDataLoader) ReadMulti(t *types.TBean) []*defs.Record {
 			firstCellStr := strings.TrimSpace(fmt.Sprintf("%v", row[0].Value))
 			// 忽略注释行（以 ## 起始）或数据禁用行（通常是 # 起始，或者视业务而定）
 			if strings.HasPrefix(firstCellStr, "##") || strings.HasPrefix(firstCellStr, "#") {
+				i++
 				continue
 			}
 
@@ -174,12 +189,33 @@ func (l *ExcelDataLoader) ReadMulti(t *types.TBean) []*defs.Record {
 
 					var strVals []string
 					if found {
-						for _, colIdx := range colIdxs {
-							if colIdx < len(row) {
-								cell := row[colIdx]
-								strVal := strings.TrimSpace(fmt.Sprintf("%v", cell.Value))
-								if strVal != "" {
-									strVals = append(strVals, strVal)
+						// 收集当前行以及后续属于同一条记录的行
+						for r := i; r < len(sheet.Cells); r++ {
+							currRow := sheet.Cells[r]
+							
+							// 跳过控制行
+							if len(currRow) > 0 {
+								firstCellStr := strings.TrimSpace(fmt.Sprintf("%v", currRow[0].Value))
+								if strings.HasPrefix(firstCellStr, "##") || strings.HasPrefix(firstCellStr, "#") {
+									continue
+								}
+							}
+
+							// 如果不是第一行，检查主键是否为空，如果不为空，说明是新记录，不能再继续收集
+							if r > i && primaryColIdx >= 0 && primaryColIdx < len(currRow) {
+								pkVal := strings.TrimSpace(fmt.Sprintf("%v", currRow[primaryColIdx].Value))
+								if pkVal != "" {
+									break // 遇到新记录，停止收集
+								}
+							}
+
+							for _, colIdx := range colIdxs {
+								if colIdx < len(currRow) {
+									cell := currRow[colIdx]
+									strVal := strings.TrimSpace(fmt.Sprintf("%v", cell.Value))
+									if strVal != "" {
+										strVals = append(strVals, strVal)
+									}
 								}
 							}
 						}
@@ -212,6 +248,47 @@ func (l *ExcelDataLoader) ReadMulti(t *types.TBean) []*defs.Record {
 
 			dBean := datas.NewDBean(t, implBeanType, fieldsData)
 			records = append(records, defs.NewRecord(dBean, l.rawUrl, nil))
+
+			// 计算跳过多少行（因为内部已经合并了后面的空主键行）
+			nextI := i + 1
+			for r := i + 1; r < len(sheet.Cells); r++ {
+				currRow := sheet.Cells[r]
+				
+				// 跳过控制行和忽略行，同时也要算在 nextI 里面，因为要跳过它们
+				if len(currRow) > 0 {
+					firstCellStr := strings.TrimSpace(fmt.Sprintf("%v", currRow[0].Value))
+					if strings.HasPrefix(firstCellStr, "##") || strings.HasPrefix(firstCellStr, "#") {
+						nextI++
+						continue
+					}
+				}
+
+				// 如果能够检查到主键列
+				if primaryColIdx >= 0 {
+					if primaryColIdx < len(currRow) {
+						pkVal := strings.TrimSpace(fmt.Sprintf("%v", currRow[primaryColIdx].Value))
+						if pkVal != "" {
+							// 遇到新记录了，跳出计算
+							break
+						} else {
+							// 是同一条记录的延续
+							nextI++
+						}
+					} else {
+						// 主键列不存在，等同于主键为空（延续行）
+						nextI++
+					}
+				} else {
+					// 无法判断主键（可能根本没有），那就默认当成一行记录
+					break
+				}
+			}
+			
+			// 防御性编程：如果 nextI 没有增加，强制增加避免死循环
+			if nextI <= i {
+				nextI = i + 1
+			}
+			i = nextI
 		}
 	}
 
