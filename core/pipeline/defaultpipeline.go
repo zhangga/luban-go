@@ -145,6 +145,12 @@ func (p *DefaultPipeline) Process(args *PipelineArguments) error {
 			return fmt.Errorf("failed to create java code target: %w", err)
 		}
 		target = t
+	case "pb":
+		t, err := codetarget.NewPbTarget(filepath.Join(args.TemplateDir, "pb"))
+		if err != nil {
+			return fmt.Errorf("failed to create pb code target: %w", err)
+		}
+		target = t
 	case "cs":
 		t, err := codetarget.NewCSTarget(filepath.Join(args.TemplateDir, "cs"))
 		if err != nil {

@@ -40,6 +40,7 @@ func NewTemplateCodeTarget(name string, fileExt string, templateDir string, type
 		"lower": strings.ToLower,
 		"upper": strings.ToUpper,
 		"type":  t.typeMapper,
+		"add": func(a, b int) int { return a + b },
 	})
 
 	if err := t.loadTemplates(); err != nil {

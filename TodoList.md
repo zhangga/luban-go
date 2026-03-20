@@ -25,7 +25,7 @@
 当前仅支持 JSON 格式，需要补充：
 - [x] **Binary 二进制格式**：支持紧凑的二进制结构导出，提升加载速度并减小包体
 - [x] **Lua 数据导出**：支持导出为 `.lua` 的 Table 结构，便于热更游戏使用]()
-- [ ] **Protobuf / FlatBuffers** 等其他序列化格式导出
+- [x] **Protobuf / FlatBuffers** 等其他序列化格式导出
 
 ## 5. 更多语言的代码模板 (CodeTarget) - ⚪ 优先级低
 基于现有的 `TemplateCodeTarget` 扩展更多语言支持：
