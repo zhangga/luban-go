@@ -12,9 +12,9 @@ type JsonDataTarget struct {
 	visitor *ToJsonVisitor
 }
 
-func NewJsonDataTarget() *JsonDataTarget {
+func NewJsonDataTarget(targetGroups []string) *JsonDataTarget {
 	return &JsonDataTarget{
-		visitor: NewToJsonVisitor(),
+		visitor: NewToJsonVisitor(targetGroups),
 	}
 }
 

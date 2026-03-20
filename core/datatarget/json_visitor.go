@@ -7,10 +7,14 @@ import (
 )
 
 // ToJsonVisitor 是一个实现 IDataVisitor 接口的访问者，将 DType 转换为可以被 json.Marshal 的对象
-type ToJsonVisitor struct{}
+type ToJsonVisitor struct {
+	TargetGroups []string
+}
 
-func NewToJsonVisitor() *ToJsonVisitor {
-	return &ToJsonVisitor{}
+func NewToJsonVisitor(targetGroups []string) *ToJsonVisitor {
+	return &ToJsonVisitor{
+		TargetGroups: targetGroups,
+	}
 }
 
 func (v *ToJsonVisitor) VisitDBool(d *datas.DBool) interface{} {
@@ -68,11 +72,15 @@ func (v *ToJsonVisitor) VisitDBean(d *datas.DBean) interface{} {
 	if implBean != nil && implBean.DefBean != nil {
 		if beanImpl, ok := implBean.DefBean.(*defs.DefBeanImpl); ok {
 			for i, field := range beanImpl.HierarchyFields {
+				// 添加 group 过滤
+				if !field.NeedExport(v.TargetGroups) {
+					continue
+				}
+
 				if i < len(d.Fields) {
 					if d.Fields[i] != nil {
 						m[field.Raw.Name] = d.Fields[i].Accept(v)
 					}
-					// 只有显示声明为空的，或者不需要的我们可以忽略，或者保留原样
 				}
 			}
 		}

@@ -23,10 +23,11 @@ func TestGoCodeTarget_GenerateBean(t *testing.T) {
 	// 将 RawField 转换为 DefField
 	for _, f := range rawBean.Fields {
 		defBean.Fields = append(defBean.Fields, defs.NewDefField(f))
+		defBean.HierarchyFields = append(defBean.HierarchyFields, defs.NewDefField(f))
 	}
 
 	target := NewGoCodeTarget()
-	outBytes, err := target.GenerateBean(defBean)
+	outBytes, err := target.GenerateBean(defBean, []string{"client"})
 	if err != nil {
 		t.Fatalf("Failed to generate bean: %v", err)
 	}
@@ -48,17 +49,28 @@ func TestGoCodeTarget_GenerateBean(t *testing.T) {
 }
 
 func TestGoCodeTarget_GenerateTable(t *testing.T) {
+	// 创建一个虚假的 assembly 和类型来满足 GoTarget 中对 assembly 和类型查找的依赖
+	rawAss := rawdefs.NewRawAssembly()
+	rawAss.Beans = append(rawAss.Beans, &rawdefs.RawBean{
+		Namespace: "Demo",
+		Name:      "Item",
+		Fields: []*rawdefs.RawField{
+			{Name: "id", Type: "int", Comment: "物品ID"},
+		},
+	})
+	assembly, _ := defs.NewDefAssemblyImpl(rawAss, "all", nil)
+
 	rawTable := &rawdefs.RawTable{
 		Namespace: "Demo",
 		Name:      "TbItem",
-		ValueType: "Item",
+		ValueType: "Demo.Item", // 使用完整名以便组装查找
 		Index:     "id",
 	}
 
 	defTable := defs.NewDefTable(rawTable)
 	target := NewGoCodeTarget()
 
-	outBytes, err := target.GenerateTable(defTable)
+	outBytes, err := target.GenerateTable(assembly, defTable)
 	if err != nil {
 		t.Fatalf("Failed to generate table: %v", err)
 	}
@@ -71,10 +83,10 @@ func TestGoCodeTarget_GenerateTable(t *testing.T) {
 	if !strings.Contains(outStr, "type TbItem struct") {
 		t.Errorf("Expected type TbItem struct, got: \n%s", outStr)
 	}
-	if !strings.Contains(outStr, "DataList []*Item") {
-		t.Errorf("Expected DataList []*Item, got: \n%s", outStr)
+	if !strings.Contains(outStr, "DataList []*Demo.Item") {
+		t.Errorf("Expected DataList []*Demo.Item, got: \n%s", outStr)
 	}
-	if !strings.Contains(outStr, "DataMap  map[int32]*Item") {
-		t.Errorf("Expected DataMap  map[int32]*Item, got: \n%s", outStr)
+	if !strings.Contains(outStr, "DataMap  map[int32]*Demo.Item") {
+		t.Errorf("Expected DataMap  map[int32]*Demo.Item, got: \n%s", outStr)
 	}
 }

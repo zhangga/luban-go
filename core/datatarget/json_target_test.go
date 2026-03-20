@@ -23,6 +23,8 @@ func TestJsonDataTarget_ExportTable(t *testing.T) {
 	defBean := defs.NewDefBeanImpl(rawBean)
 	defBean.Fields = append(defBean.Fields, defs.NewDefField(rawBean.Fields[0]))
 	defBean.Fields = append(defBean.Fields, defs.NewDefField(rawBean.Fields[1]))
+	defBean.HierarchyFields = append(defBean.HierarchyFields, defs.NewDefField(rawBean.Fields[0]))
+	defBean.HierarchyFields = append(defBean.HierarchyFields, defs.NewDefField(rawBean.Fields[1]))
 
 	tBean := types.NewTBean(false, defBean, nil)
 
@@ -43,7 +45,7 @@ func TestJsonDataTarget_ExportTable(t *testing.T) {
 	defTable := defs.NewDefTable(rawTable)
 
 	// 导出
-	target := NewJsonDataTarget()
+	target := NewJsonDataTarget([]string{})
 	out, err := target.ExportTable(defTable, []*defs.Record{record1, record2})
 	if err != nil {
 		t.Fatalf("Failed to export table: %v", err)

@@ -54,10 +54,12 @@ func (t *GoCodeTarget) ValidateDefinition(assembly *defs.DefAssemblyImpl) error 
 }
 
 func (t *GoCodeTarget) Handle(assembly *defs.DefAssemblyImpl, manifest *OutputFileManifest) error {
+	targetGroups := assembly.Target.Groups
+
 	// 生成 Bean 代码
 	for _, rawType := range assembly.Types {
 		if bean, ok := rawType.(*defs.DefBeanImpl); ok {
-			out, err := t.GenerateBean(bean)
+			out, err := t.GenerateBean(bean, targetGroups)
 			if err != nil {
 				return err
 			}
@@ -67,8 +69,8 @@ func (t *GoCodeTarget) Handle(assembly *defs.DefAssemblyImpl, manifest *OutputFi
 	}
 
 	// 生成 Table 代码
-	for _, table := range assembly.GetAllTables() {
-		out, err := t.GenerateTable(table)
+	for _, table := range assembly.ExportTables {
+		out, err := t.GenerateTable(assembly, table)
 		if err != nil {
 			return err
 		}
@@ -100,7 +102,7 @@ func typeMapping(lubanType string) string {
 	}
 }
 
-func (t *GoCodeTarget) GenerateBean(bean *defs.DefBeanImpl) ([]byte, error) {
+func (t *GoCodeTarget) GenerateBean(bean *defs.DefBeanImpl, targetGroups []string) ([]byte, error) {
 	type FieldInfo struct {
 		Name    string
 		Type    string
@@ -109,11 +111,13 @@ func (t *GoCodeTarget) GenerateBean(bean *defs.DefBeanImpl) ([]byte, error) {
 
 	fields := make([]FieldInfo, 0, len(bean.Fields))
 	for _, f := range bean.Fields {
-		fields = append(fields, FieldInfo{
-			Name:    strings.Title(f.Raw.Name), // Go 导出字段大写
-			Type:    typeMapping(f.Raw.Type),
-			Comment: f.Raw.Comment,
-		})
+		if f.NeedExport(targetGroups) {
+			fields = append(fields, FieldInfo{
+				Name:    strings.Title(f.Raw.Name), // Go 导出字段大写
+				Type:    typeMapping(f.Raw.Type),
+				Comment: f.Raw.Comment,
+			})
+		}
 	}
 
 	ns := bean.Namespace()
@@ -135,7 +139,7 @@ func (t *GoCodeTarget) GenerateBean(bean *defs.DefBeanImpl) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (t *GoCodeTarget) GenerateTable(table *defs.DefTable) ([]byte, error) {
+func (t *GoCodeTarget) GenerateTable(assembly *defs.DefAssemblyImpl, table *defs.DefTable) ([]byte, error) {
 	ns := table.Namespace()
 	if ns == "" {
 		ns = "config"

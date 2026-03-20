@@ -10,6 +10,7 @@ import (
 	"github.com/zhangga/luban-go/core/dataloader"
 	"github.com/zhangga/luban-go/core/datatarget"
 	"github.com/zhangga/luban-go/core/defs"
+	"github.com/zhangga/luban-go/core/validator"
 	"github.com/zhangga/luban-go/core/schema"
 	"github.com/zhangga/luban-go/core/types"
 )
@@ -92,6 +93,23 @@ func (p *DefaultPipeline) Process(args *PipelineArguments) error {
 		}
 	}
 
+	// 3.5 校验数据 (Validator)
+	fmt.Println("Step 3.5: Validate data...")
+	valCtx := validator.NewValidatorContext(assembly, tableRecordsMap)
+	valMgr := validator.NewDataValidatorManager()
+	valMgr.Register(&validator.RefValidator{})
+	valMgr.Register(&validator.RangeValidator{})
+	valMgr.Register(&validator.PathValidator{BaseDir: args.InputDataDir})
+
+	valErrs := valMgr.Validate(valCtx)
+	if len(valErrs) > 0 {
+		fmt.Println("Validation failed with the following errors:")
+		for _, err := range valErrs {
+			fmt.Printf(" - %v\n", err)
+		}
+		return fmt.Errorf("data validation failed with %d errors", len(valErrs))
+	}
+
 	// 4. 生成代码 (CodeTarget)
 	fmt.Println("Step 4: Generate codes...")
 	var target codetarget.ICodeTarget
@@ -102,6 +120,30 @@ func (p *DefaultPipeline) Process(args *PipelineArguments) error {
 	}
 
 	switch lang {
+	case "ts":
+		t, err := codetarget.NewTSTarget(filepath.Join(args.TemplateDir, "ts"))
+		if err != nil {
+			return fmt.Errorf("failed to create ts code target: %w", err)
+		}
+		target = t
+	case "lua":
+		t, err := codetarget.NewLuaCodeTarget(filepath.Join(args.TemplateDir, "lua"))
+		if err != nil {
+			return fmt.Errorf("failed to create lua code target: %w", err)
+		}
+		target = t
+	case "cpp":
+		t, err := codetarget.NewCppTarget(filepath.Join(args.TemplateDir, "cpp"))
+		if err != nil {
+			return fmt.Errorf("failed to create cpp code target: %w", err)
+		}
+		target = t
+	case "java":
+		t, err := codetarget.NewJavaTarget(filepath.Join(args.TemplateDir, "java"))
+		if err != nil {
+			return fmt.Errorf("failed to create java code target: %w", err)
+		}
+		target = t
 	case "cs":
 		t, err := codetarget.NewCSTarget(filepath.Join(args.TemplateDir, "cs"))
 		if err != nil {
@@ -120,10 +162,23 @@ func (p *DefaultPipeline) Process(args *PipelineArguments) error {
 
 	// 5. 导出数据 (DataTarget)
 	fmt.Println("Step 5: Export data...")
-	jsonTarget := datatarget.NewJsonDataTarget()
+	targetGroups := assembly.Target.Groups
+
+	dataTargetLang := "json"
+	if len(args.DataTargets) > 0 && args.DataTargets[0] != "" {
+		dataTargetLang = args.DataTargets[0]
+	}
+
+	var dTarget datatarget.IDataTarget
+	if dataTargetLang == "lua" {
+		dTarget = datatarget.NewLuaDataTarget(targetGroups)
+	} else {
+		dTarget = datatarget.NewJsonDataTarget(targetGroups)
+	}
+
 	for _, table := range assembly.ExportTables {
 		records := tableRecordsMap[table.FullName()]
-		out, err := jsonTarget.ExportTable(table, records)
+		out, err := dTarget.ExportTable(table, records)
 		if err != nil {
 			return fmt.Errorf("failed to export data: %w", err)
 		}

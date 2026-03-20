@@ -86,10 +86,12 @@ func (t *TemplateCodeTarget) ValidateDefinition(assembly *defs.DefAssemblyImpl) 
 }
 
 func (t *TemplateCodeTarget) Handle(assembly *defs.DefAssemblyImpl, manifest *OutputFileManifest) error {
+	targetGroups := assembly.Target.Groups
+
 	// 遍历并生成所有的 Bean
 	for _, rawType := range assembly.Types {
 		if bean, ok := rawType.(*defs.DefBeanImpl); ok {
-			out, err := t.GenerateBean(bean)
+			out, err := t.GenerateBean(bean, targetGroups)
 			if err != nil {
 				return err
 			}
@@ -99,7 +101,7 @@ func (t *TemplateCodeTarget) Handle(assembly *defs.DefAssemblyImpl, manifest *Ou
 	}
 
 	// 遍历并生成所有的 Table
-	for _, table := range assembly.TablesByFullName {
+	for _, table := range assembly.ExportTables {
 		out, err := t.GenerateTable(assembly, table)
 		if err != nil {
 			return err
@@ -111,7 +113,7 @@ func (t *TemplateCodeTarget) Handle(assembly *defs.DefAssemblyImpl, manifest *Ou
 	return nil
 }
 
-func (t *TemplateCodeTarget) GenerateBean(bean *defs.DefBeanImpl) ([]byte, error) {
+func (t *TemplateCodeTarget) GenerateBean(bean *defs.DefBeanImpl, targetGroups []string) ([]byte, error) {
 	type FieldInfo struct {
 		Name    string
 		Type    string
@@ -120,17 +122,8 @@ func (t *TemplateCodeTarget) GenerateBean(bean *defs.DefBeanImpl) ([]byte, error
 
 	exportFields := make([]FieldInfo, 0)
 	for _, f := range bean.Fields {
-		exportFields = append(exportFields, FieldInfo{
-			Name:    f.Raw.Name,
-			Type:    f.Raw.Type,
-			Comment: f.Raw.Comment,
-		})
-	}
-
-	parentFields := make([]FieldInfo, 0)
-	if bean.ParentDefType != nil {
-		for _, f := range bean.ParentDefType.HierarchyFields {
-			parentFields = append(parentFields, FieldInfo{
+		if f.NeedExport(targetGroups) {
+			exportFields = append(exportFields, FieldInfo{
 				Name:    f.Raw.Name,
 				Type:    f.Raw.Type,
 				Comment: f.Raw.Comment,
@@ -138,13 +131,28 @@ func (t *TemplateCodeTarget) GenerateBean(bean *defs.DefBeanImpl) ([]byte, error
 		}
 	}
 
+	parentFields := make([]FieldInfo, 0)
+	if bean.ParentDefType != nil {
+		for _, f := range bean.ParentDefType.HierarchyFields {
+			if f.NeedExport(targetGroups) {
+				parentFields = append(parentFields, FieldInfo{
+					Name:    f.Raw.Name,
+					Type:    f.Raw.Type,
+					Comment: f.Raw.Comment,
+				})
+			}
+		}
+	}
+
 	hierarchyFields := make([]FieldInfo, 0)
 	for _, f := range bean.HierarchyFields {
-		hierarchyFields = append(hierarchyFields, FieldInfo{
-			Name:    f.Raw.Name,
-			Type:    f.Raw.Type,
-			Comment: f.Raw.Comment,
-		})
+		if f.NeedExport(targetGroups) {
+			hierarchyFields = append(hierarchyFields, FieldInfo{
+				Name:    f.Raw.Name,
+				Type:    f.Raw.Type,
+				Comment: f.Raw.Comment,
+			})
+		}
 	}
 
 	data := map[string]interface{}{

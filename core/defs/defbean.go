@@ -75,3 +75,23 @@ type DefField struct {
 func NewDefField(raw *rawdefs.RawField) *DefField {
 	return &DefField{Raw: raw}
 }
+
+// NeedExport 根据指定的目标 group 判断该字段是否需要导出
+func (f *DefField) NeedExport(targetGroups []string) bool {
+	if len(f.Raw.Groups) == 0 {
+		return true // 如果字段没有配置任何 group，默认所有 target 均导出
+	}
+	if len(targetGroups) == 0 {
+		return true // 如果 target 没有指定 group，也默认导出
+	}
+
+	// 取交集，只要有一个命中就导出
+	for _, tg := range targetGroups {
+		for _, fg := range f.Raw.Groups {
+			if tg == fg {
+				return true
+			}
+		}
+	}
+	return false
+}

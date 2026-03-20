@@ -27,8 +27,8 @@ func TestXmlSchemaLoader(t *testing.T) {
 		}
 	}
 
-	if len(assembly.Beans) != 1 {
-		t.Errorf("Expected 1 bean, got %d", len(assembly.Beans))
+	if len(assembly.Beans) != 4 {
+		t.Errorf("Expected 4 beans, got %d", len(assembly.Beans))
 	} else {
 		bean := assembly.Beans[0]
 		if bean.FullName() != "demo.Item" {
