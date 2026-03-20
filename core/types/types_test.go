@@ -14,6 +14,7 @@ func (v *dummyVisitor) VisitTLong(t *TLong) interface{}         { return t.TypeN
 func (v *dummyVisitor) VisitTFloat(t *TFloat) interface{}       { return t.TypeName() }
 func (v *dummyVisitor) VisitTDouble(t *TDouble) interface{}     { return t.TypeName() }
 func (v *dummyVisitor) VisitTString(t *TString) interface{}     { return t.TypeName() }
+func (v *dummyVisitor) VisitTText(t *TText) interface{}         { return t.TypeName() }
 func (v *dummyVisitor) VisitTEnum(t *TEnum) interface{}         { return t.TypeName() }
 func (v *dummyVisitor) VisitTBean(t *TBean) interface{}         { return t.TypeName() }
 func (v *dummyVisitor) VisitTArray(t *TArray) interface{}       { return t.TypeName() }

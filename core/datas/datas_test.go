@@ -15,6 +15,7 @@ func (v *dummyDataVisitor) VisitDLong(d *DLong) interface{}         { return d.T
 func (v *dummyDataVisitor) VisitDFloat(d *DFloat) interface{}       { return d.TypeName() }
 func (v *dummyDataVisitor) VisitDDouble(d *DDouble) interface{}     { return d.TypeName() }
 func (v *dummyDataVisitor) VisitDString(d *DString) interface{}     { return d.TypeName() }
+func (v *dummyDataVisitor) VisitDText(d *DText) interface{}         { return d.TypeName() }
 func (v *dummyDataVisitor) VisitDEnum(d *DEnum) interface{}         { return d.TypeName() }
 func (v *dummyDataVisitor) VisitDBean(d *DBean) interface{}         { return d.TypeName() }
 func (v *dummyDataVisitor) VisitDArray(d *DArray) interface{}       { return d.TypeName() }

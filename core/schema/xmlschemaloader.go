@@ -268,6 +268,14 @@ func (l *XmlSchemaLoader) addTable(decoder *xml.Decoder, se *xml.StartElement) e
 		Mode:      mode,
 	}
 
+	fileAttr := getAttr(se, "file")
+	if fileAttr == "" {
+		fileAttr = getAttr(se, "input")
+	}
+	if fileAttr != "" {
+		table.InputFiles = strings.Split(fileAttr, ",")
+	}
+
 	for {
 		t, err := decoder.Token()
 		if err == io.EOF {

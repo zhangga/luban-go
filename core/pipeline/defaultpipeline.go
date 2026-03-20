@@ -5,15 +5,16 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/zhangga/luban-go/core/codetarget"
 	"github.com/zhangga/luban-go/core/dataloader"
 	"github.com/zhangga/luban-go/core/datatarget"
 	"github.com/zhangga/luban-go/core/defs"
-	"github.com/zhangga/luban-go/core/validator"
+	"github.com/zhangga/luban-go/core/l10n"
 	"github.com/zhangga/luban-go/core/schema"
 	"github.com/zhangga/luban-go/core/types"
-	"github.com/zhangga/luban-go/core/l10n"
+	"github.com/zhangga/luban-go/core/validator"
 )
 
 type DefaultPipeline struct {
@@ -62,48 +63,93 @@ func (p *DefaultPipeline) Process(args *PipelineArguments) error {
 	typeFactory := defs.NewTTypeFactory(assembly)
 
 	for _, table := range assembly.ExportTables {
-		// 假设数据文件在 args.InputDataDir 下与表名相同，不分大小写处理或直接映射
-		// 在我们的测试例子里表名叫 TbItem, 所以文件是 TbItem.xlsx
-		dataPath := filepath.Join(args.InputDataDir, "Datas", table.Name()+".xlsx")
-		csvDataPath := filepath.Join(args.InputDataDir, "Datas", table.Name()+".csv")
-		
-		var loader dataloader.IDataLoader
-		var loadPath string
-		var f *os.File
-		
-		if _, err := os.Stat(dataPath); err == nil {
-			f, _ = os.Open(dataPath)
-			loader = dataloader.NewExcelDataLoader(typeFactory)
-			loadPath = dataPath
-		} else if _, err := os.Stat(csvDataPath); err == nil {
-			f, _ = os.Open(csvDataPath)
-			loader = dataloader.NewCsvDataLoader(typeFactory)
-			loadPath = csvDataPath
+		// 收集表对应的数据文件
+		var inputFiles []string
+		if len(table.Raw.InputFiles) > 0 {
+			inputFiles = table.Raw.InputFiles
+		} else {
+			inputFiles = []string{table.Name()}
 		}
-		
-		if loader != nil {
-			fmt.Printf("Loading data for table %s from %s\n", table.Name(), loadPath)
-			if err := loader.Load(loadPath, "", f); err == nil {
-				// 获取此表关联的 bean
-				tType, errType := defs.NewTTypeFactory(assembly).CreateType(table.Raw.ValueType)
-				if errType != nil {
-					fmt.Printf("Failed to create type for %s: %v\n", table.Raw.ValueType, errType)
+
+		var allRecords []*defs.Record
+		for _, rawPattern := range inputFiles {
+			// 支持 filename.xlsx@sheetName 语法
+			filePattern := rawPattern
+			subAsset := ""
+			if idx := strings.LastIndex(rawPattern, "@"); idx != -1 {
+				filePattern = rawPattern[:idx]
+				subAsset = rawPattern[idx+1:]
+			}
+
+			// 支持统配符和目录读取
+			fullPattern := filepath.Join(args.InputDataDir, "Datas", filePattern)
+
+			// 如果没有扩展名，我们默认尝试匹配 .xlsx 和 .csv
+			if filepath.Ext(fullPattern) == "" {
+				fullPattern += ".*"
+			}
+
+			matches, err := filepath.Glob(fullPattern)
+			if err != nil {
+				fmt.Printf("Warning: failed to glob pattern %s: %v\n", fullPattern, err)
+				continue
+			}
+
+			if len(matches) == 0 {
+				// 如果直接匹配不到，尝试加扩展名
+				matchesXlsx, _ := filepath.Glob(filepath.Join(args.InputDataDir, "Datas", filePattern+".xlsx"))
+				matchesCsv, _ := filepath.Glob(filepath.Join(args.InputDataDir, "Datas", filePattern+".csv"))
+				matches = append(matches, matchesXlsx...)
+				matches = append(matches, matchesCsv...)
+			}
+
+			for _, matchPath := range matches {
+				// 排除临时文件，比如 ~$xxxx.xlsx
+				if strings.HasPrefix(filepath.Base(matchPath), "~$") {
+					continue
 				}
-				if tType != nil {
-					if beanType, ok := tType.(*types.TBean); ok {
-						records := loader.ReadMulti(beanType)
-						tableRecordsMap[table.FullName()] = records
-						fmt.Printf("Loaded %d records for table %s\n", len(records), table.Name())
+
+				f, err := os.Open(matchPath)
+				if err != nil {
+					fmt.Printf("Warning: failed to open file %s: %v\n", matchPath, err)
+					continue
+				}
+
+				var loader dataloader.IDataLoader
+				ext := strings.ToLower(filepath.Ext(matchPath))
+				if ext == ".xlsx" || ext == ".xlsm" || ext == ".xls" {
+					loader = dataloader.NewExcelDataLoader(typeFactory)
+				} else if ext == ".csv" {
+					loader = dataloader.NewCsvDataLoader(typeFactory)
+				}
+
+				if loader != nil {
+					fmt.Printf("Loading data for table %s from %s (sheet: %s)\n", table.Name(), matchPath, subAsset)
+
+					if err := loader.Load(matchPath, subAsset, f); err == nil {
+						tType, errType := typeFactory.CreateType(table.Raw.ValueType)
+						if errType != nil {
+							fmt.Printf("Failed to create type for %s: %v\n", table.Raw.ValueType, errType)
+						} else if beanType, ok := tType.(*types.TBean); ok {
+							records := loader.ReadMulti(beanType)
+							allRecords = append(allRecords, records...)
+							fmt.Printf("Loaded %d records from %s\n", len(records), matchPath)
+						} else {
+							fmt.Printf("Type %s is not a bean type, it is %s\n", table.Raw.ValueType, tType.TypeName())
+						}
 					} else {
-						fmt.Printf("Type %s is not a bean type, it is %s\n", table.Raw.ValueType, tType.TypeName())
+						fmt.Printf("Failed to parse file %s: %v\n", matchPath, err)
 					}
 				}
-			} else {
-				fmt.Printf("Failed to parse file %s: %v\n", loadPath, err)
+				f.Close()
 			}
-			f.Close()
+		}
+
+		if len(allRecords) > 0 {
+			tableRecordsMap[table.FullName()] = allRecords
+			fmt.Printf("Total loaded %d records for table %s\n", len(allRecords), table.Name())
 		} else {
-			fmt.Printf("Data file for table %s not found (tried .xlsx, .csv)\n", table.Name())
+			fmt.Printf("No data found for table %s\n", table.Name())
 		}
 	}
 
@@ -185,7 +231,7 @@ func (p *DefaultPipeline) Process(args *PipelineArguments) error {
 	l10nData, err := l10n.GetManager().Export()
 	if err != nil {
 		fmt.Printf("Warning: failed to export l10n data: %v\n", err)
-	} else if string(l10nData) != "{}" && string(l10nData) != "{\n}" { 
+	} else if string(l10nData) != "{}" && string(l10nData) != "{\n}" {
 		manifest.AddDataFile(codetarget.NewOutputFile("l10n.json", l10nData))
 	}
 

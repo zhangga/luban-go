@@ -58,6 +58,22 @@ func (v *ToLuaVisitor) VisitDString(d *datas.DString) interface{} {
 	return fmt.Sprintf("\"%s\"", str)
 }
 
+func (v *ToLuaVisitor) VisitDText(d *datas.DText) interface{} {
+	// 在 Lua 中，text 类型可以导出为带有 key 和 text 的 table，或者直接导出为字符串
+	// 这里简单处理为只导出字符串或者包含 key 的 table
+	str := strings.ReplaceAll(d.RawText, "\\", "\\\\")
+	str = strings.ReplaceAll(str, "\"", "\\\"")
+	str = strings.ReplaceAll(str, "\n", "\\n")
+
+	if d.Key != "" {
+		keyStr := strings.ReplaceAll(d.Key, "\\", "\\\\")
+		keyStr = strings.ReplaceAll(keyStr, "\"", "\\\"")
+		keyStr = strings.ReplaceAll(keyStr, "\n", "\\n")
+		return fmt.Sprintf("{key=\"%s\", text=\"%s\"}", keyStr, str)
+	}
+	return fmt.Sprintf("\"%s\"", str)
+}
+
 func (v *ToLuaVisitor) VisitDEnum(d *datas.DEnum) interface{} {
 	return fmt.Sprintf("%d", d.Value)
 }
@@ -74,7 +90,7 @@ func (v *ToLuaVisitor) VisitDBean(d *datas.DBean) interface{} {
 	fieldCount := 0
 	if implBean != nil && implBean.DefBean != nil {
 		if beanImpl, ok := implBean.DefBean.(*defs.DefBeanImpl); ok {
-			
+
 			// 处理多态标识 ($type) -> 转化为 _type 或者不处理（可选，这里用 _type 标识）
 			if d.Type.IsDynamic() && d.ImplType != nil {
 				sb.WriteString(fmt.Sprintf("_type=\"%s\"", d.ImplType.DefBean.Name()))
@@ -91,7 +107,7 @@ func (v *ToLuaVisitor) VisitDBean(d *datas.DBean) interface{} {
 						if fieldCount > 0 {
 							sb.WriteString(", ")
 						}
-						
+
 						// Lua 的 key 如果是合法标识符可以直接写 key=value
 						sb.WriteString(field.Raw.Name)
 						sb.WriteString("=")
@@ -147,7 +163,7 @@ func (v *ToLuaVisitor) VisitDMap(d *datas.DMap) interface{} {
 		// 如果 key 是字符串，需要加 [] 括起来。因为上面 String 访问器已经包裹了 ""，这里直接包 [] 即可。
 		// 如果 key 是数字，也应该包裹 []，这是 lua map 的标准格式
 		sb.WriteString(fmt.Sprintf("[%s]=", keyStr))
-		
+
 		if val != nil {
 			sb.WriteString(fmt.Sprintf("%v", val.Accept(v)))
 		} else {

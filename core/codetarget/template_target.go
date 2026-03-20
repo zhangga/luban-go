@@ -13,25 +13,29 @@ import (
 
 // TemplateCodeTarget 提供了一个通用的基于 text/template 的代码生成器实现
 type TemplateCodeTarget struct {
-	name          string
-	fileExt       string
-	templateDir   string
-	typeMapper    func(string) string
-	beanTmplName  string
-	tableTmplName string
-	tmpl          *template.Template
+	name           string
+	fileExt        string
+	templateDir    string
+	typeMapper     func(string) string
+	beanTmplName   string
+	tableTmplName  string
+	tablesTmplName string
+	enumTmplName   string
+	tmpl           *template.Template
 }
 
 // NewTemplateCodeTarget 创建一个模板生成器
 func NewTemplateCodeTarget(name string, fileExt string, templateDir string, typeMapper func(string) string) (*TemplateCodeTarget, error) {
 	t := &TemplateCodeTarget{
-		name:          name,
-		fileExt:       fileExt,
-		templateDir:   templateDir,
-		typeMapper:    typeMapper,
-		beanTmplName:  "bean.tpl",
-		tableTmplName: "table.tpl",
-		tmpl:          template.New("root"),
+		name:           name,
+		fileExt:        fileExt,
+		templateDir:    templateDir,
+		typeMapper:     typeMapper,
+		beanTmplName:   "bean.tpl",
+		tableTmplName:  "table.tpl",
+		tablesTmplName: "tables.tpl",
+		enumTmplName:   "enum.tpl",
+		tmpl:           template.New("root"),
 	}
 
 	// 注册一些通用的模板函数
@@ -40,7 +44,7 @@ func NewTemplateCodeTarget(name string, fileExt string, templateDir string, type
 		"lower": strings.ToLower,
 		"upper": strings.ToUpper,
 		"type":  t.typeMapper,
-		"add": func(a, b int) int { return a + b },
+		"add":   func(a, b int) int { return a + b },
 	})
 
 	if err := t.loadTemplates(); err != nil {
@@ -75,6 +79,24 @@ func (t *TemplateCodeTarget) loadTemplates() error {
 		return err
 	}
 
+	// 读取可选的 tables.tpl
+	tablesTmplPath := filepath.Join(t.templateDir, t.tablesTmplName)
+	b, err = ioutil.ReadFile(tablesTmplPath)
+	if err == nil {
+		if _, err := t.tmpl.New(t.tablesTmplName).Parse(string(b)); err != nil {
+			return err
+		}
+	}
+
+	// 读取可选的 enum.tpl
+	enumTmplPath := filepath.Join(t.templateDir, t.enumTmplName)
+	b, err = ioutil.ReadFile(enumTmplPath)
+	if err == nil {
+		if _, err := t.tmpl.New(t.enumTmplName).Parse(string(b)); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -89,8 +111,17 @@ func (t *TemplateCodeTarget) ValidateDefinition(assembly *defs.DefAssemblyImpl) 
 func (t *TemplateCodeTarget) Handle(assembly *defs.DefAssemblyImpl, manifest *OutputFileManifest) error {
 	targetGroups := assembly.Target.Groups
 
-	// 遍历并生成所有的 Bean
+	// 遍历并生成所有的 Enum 和 Bean
 	for _, rawType := range assembly.Types {
+		if enum, ok := rawType.(*defs.DefEnumImpl); ok && t.tmpl.Lookup(t.enumTmplName) != nil {
+			out, err := t.GenerateEnum(enum, targetGroups)
+			if err != nil {
+				return err
+			}
+			filePath := fmt.Sprintf("%s.%s", strings.ToLower(enum.Name()), t.fileExt)
+			manifest.AddCodeFile(NewOutputFile(filePath, out))
+		}
+
 		if bean, ok := rawType.(*defs.DefBeanImpl); ok {
 			out, err := t.GenerateBean(bean, targetGroups)
 			if err != nil {
@@ -111,7 +142,43 @@ func (t *TemplateCodeTarget) Handle(assembly *defs.DefAssemblyImpl, manifest *Ou
 		manifest.AddCodeFile(NewOutputFile(filePath, out))
 	}
 
+	// 生成根级 Tables 文件
+	if t.tmpl.Lookup(t.tablesTmplName) != nil {
+		out, err := t.GenerateTables(assembly, targetGroups)
+		if err != nil {
+			return err
+		}
+		manifest.AddCodeFile(NewOutputFile("tables."+t.fileExt, out))
+	}
+
 	return nil
+}
+
+func (t *TemplateCodeTarget) GenerateEnum(enum *defs.DefEnumImpl, targetGroups []string) ([]byte, error) {
+	data := map[string]interface{}{
+		"Namespace": enum.Namespace(),
+		"Name":      enum.Name(),
+		"Comment":   enum.Raw.Comment,
+		"Items":     enum.Raw.Items,
+	}
+
+	var buf bytes.Buffer
+	if err := t.tmpl.ExecuteTemplate(&buf, t.enumTmplName, data); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func (t *TemplateCodeTarget) GenerateTables(assembly *defs.DefAssemblyImpl, targetGroups []string) ([]byte, error) {
+	data := map[string]interface{}{
+		"Tables": assembly.ExportTables,
+	}
+
+	var buf bytes.Buffer
+	if err := t.tmpl.ExecuteTemplate(&buf, t.tablesTmplName, data); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }
 
 func (t *TemplateCodeTarget) GenerateBean(bean *defs.DefBeanImpl, targetGroups []string) ([]byte, error) {
