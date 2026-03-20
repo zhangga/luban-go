@@ -172,6 +172,8 @@ func (p *DefaultPipeline) Process(args *PipelineArguments) error {
 	var dTarget datatarget.IDataTarget
 	if dataTargetLang == "lua" {
 		dTarget = datatarget.NewLuaDataTarget(targetGroups)
+	} else if dataTargetLang == "bin" {
+		dTarget = datatarget.NewBinDataTarget(targetGroups)
 	} else {
 		dTarget = datatarget.NewJsonDataTarget(targetGroups)
 	}
