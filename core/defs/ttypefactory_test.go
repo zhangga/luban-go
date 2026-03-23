@@ -13,6 +13,10 @@ func TestTypeFactory(t *testing.T) {
 	rawAss.Enums = append(rawAss.Enums, &rawdefs.RawEnum{
 		Namespace: "demo",
 		Name:      "Gender",
+		Items: []*rawdefs.EnumItem{
+			{Name: "Male", Value: "1"},
+			{Name: "Female", Value: "2"},
+		},
 	})
 
 	// Add a Bean

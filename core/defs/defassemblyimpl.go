@@ -50,8 +50,10 @@ func NewDefAssemblyImpl(raw *rawdefs.RawAssembly, targetName string, outputTable
 		a.AddType(defBean)
 	}
 
-	// 编译 Bean，建立父子依赖关系和层级字段 (模拟 Compile 阶段)
-	a.compileBeans()
+	// 编译 Bean，建立父子依赖关系和层级字段
+	if err := a.compileBeans(); err != nil {
+		return nil, err
+	}
 
 	for _, tb := range raw.Tables {
 		defTable := NewDefTable(tb)
@@ -59,6 +61,11 @@ func NewDefAssemblyImpl(raw *rawdefs.RawAssembly, targetName string, outputTable
 		if err := a.AddCfgTable(defTable); err != nil {
 			return nil, err
 		}
+	}
+
+	// 执行完整校验 (Compile Phase)
+	if err := a.compileAll(); err != nil {
+		return nil, err
 	}
 
 	// 初始化 ExportTables
@@ -112,7 +119,7 @@ func (a *DefAssemblyImpl) GetType(fullName string) DefTypeBase {
 	return a.Types[fullName]
 }
 
-func (a *DefAssemblyImpl) compileBeans() {
+func (a *DefAssemblyImpl) compileBeans() error {
 	// 1. 建立父子链接
 	for _, t := range a.TypeList {
 		if bean, ok := t.(*DefBeanImpl); ok {
@@ -149,6 +156,112 @@ func (a *DefAssemblyImpl) compileBeans() {
 			a.buildHierarchyFields(bean)
 		}
 	}
+	return nil
+}
+
+func (a *DefAssemblyImpl) compileAll() error {
+	// 先校验所有的 Bean (字段重名等)
+	for _, t := range a.TypeList {
+		if bean, ok := t.(*DefBeanImpl); ok {
+			if err := a.validateBean(bean); err != nil {
+				return err
+			}
+		}
+	}
+
+	for _, t := range a.TypeList {
+		switch def := t.(type) {
+		case *DefEnumImpl:
+			if err := a.validateEnum(def); err != nil {
+				return err
+			}
+		case *DefTable:
+			if err := a.validateTable(def); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (a *DefAssemblyImpl) validateEnum(enum *DefEnumImpl) error {
+	if len(enum.Raw.Items) == 0 {
+		return fmt.Errorf("enum '%s' has no items", enum.FullName())
+	}
+
+	itemNames := make(map[string]bool)
+	itemValues := make(map[string]bool)
+
+	for _, item := range enum.Raw.Items {
+		if itemNames[item.Name] {
+			return fmt.Errorf("enum '%s' has duplicated item name: '%s'", enum.FullName(), item.Name)
+		}
+		itemNames[item.Name] = true
+
+		// 检查别名 (如果存在且不等于名称)
+		if item.Alias != "" && item.Alias != item.Name {
+			if itemNames[item.Alias] {
+				return fmt.Errorf("enum '%s' item '%s' alias '%s' conflicts with existing items", enum.FullName(), item.Name, item.Alias)
+			}
+			itemNames[item.Alias] = true
+		}
+
+		if item.Value != "" {
+			if itemValues[item.Value] {
+				// 在某些原版规则中允许相同值，但通常定义应唯一。这里为了严谨可给个警告，我们暂定报错
+				return fmt.Errorf("enum '%s' has duplicated item value: %s (item: %s)", enum.FullName(), item.Value, item.Name)
+			}
+			itemValues[item.Value] = true
+		}
+	}
+
+	return nil
+}
+
+func (a *DefAssemblyImpl) validateTable(table *DefTable) error {
+	// 检查 ValueType 是否存在且必须是 Bean
+	valType := a.GetType(table.Raw.ValueType)
+	if valType == nil {
+		return fmt.Errorf("table '%s' value type '%s' not found", table.FullName(), table.Raw.ValueType)
+	}
+
+	bean, ok := valType.(*DefBeanImpl)
+	if !ok {
+		return fmt.Errorf("table '%s' value type '%s' is not a Bean", table.FullName(), table.Raw.ValueType)
+	}
+
+	// 如果指定了 index，检查它是否存在于 Bean 的 HierarchyFields 中
+	if table.Raw.Index != "" {
+		found := false
+		for _, f := range bean.HierarchyFields {
+			if f.Raw.Name == table.Raw.Index {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("table '%s' index field '%s' not found in Bean '%s'", table.FullName(), table.Raw.Index, bean.FullName())
+		}
+	} else if len(bean.HierarchyFields) == 0 {
+		return fmt.Errorf("table '%s' value type Bean '%s' has no fields, cannot be used as a table record", table.FullName(), bean.FullName())
+	}
+
+	return nil
+}
+
+func (a *DefAssemblyImpl) validateBean(bean *DefBeanImpl) error {
+	// 1. 检查字段重名 (包含继承的字段)
+	fieldNames := make(map[string]bool)
+	for _, f := range bean.HierarchyFields {
+		if fieldNames[f.Raw.Name] {
+			return fmt.Errorf("bean '%s' has duplicated field name: '%s'", bean.FullName(), f.Raw.Name)
+		}
+		fieldNames[f.Raw.Name] = true
+	}
+
+	// 2. 如果是多态根节点，确保没有普通实例被错误标记为多态等
+	// (更复杂的原版校验可逐步在这里补全)
+	return nil
 }
 
 func (a *DefAssemblyImpl) buildHierarchyFields(bean *DefBeanImpl) {
