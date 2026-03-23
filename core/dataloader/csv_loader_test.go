@@ -40,10 +40,6 @@ func TestCsvDataLoader(t *testing.T) {
 	}
 
 	beanImpl := assembly.GetType("TestCsvItem").(*defs.DefBeanImpl)
-	for _, f := range rawAss.Beans[0].Fields {
-		beanImpl.Fields = append(beanImpl.Fields, defs.NewDefField(f))
-		beanImpl.HierarchyFields = append(beanImpl.HierarchyFields, defs.NewDefField(f))
-	}
 	dummyBeanType := types.NewTBean(false, beanImpl, nil)
 
 	records := loader.ReadMulti(dummyBeanType)

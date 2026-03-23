@@ -107,7 +107,6 @@ func (l *CsvDataLoader) ReadMulti(t *types.TBean) []*defs.Record {
 			continue
 		}
 
-		fieldsData := make([]datas.DType, 0)
 		var implBeanType *types.TBean = t
 
 		if t.IsDynamic() {
@@ -124,67 +123,7 @@ func (l *CsvDataLoader) ReadMulti(t *types.TBean) []*defs.Record {
 			}
 		}
 
-		if beanImpl, ok := implBeanType.DefBean.(*defs.DefBeanImpl); ok {
-			for _, f := range beanImpl.HierarchyFields {
-				fieldName := f.Raw.Name
-				colIdxs, found := fieldIndices[fieldName]
-
-				fieldType, _ := l.typeFactory.CreateType(f.Raw.Type)
-				if fieldType == nil {
-					fieldsData = append(fieldsData, nil)
-					continue
-				}
-
-				var strVals []string
-				if found {
-					for r := i; r < len(l.records); r++ {
-						currRow := l.records[r]
-						
-						if len(currRow) > 0 {
-							fStr := strings.TrimSpace(currRow[0])
-							if strings.HasPrefix(fStr, "##") || strings.HasPrefix(fStr, "#") {
-								continue
-							}
-						}
-
-						if r > i && primaryColIdx >= 0 && primaryColIdx < len(currRow) {
-							pkVal := strings.TrimSpace(currRow[primaryColIdx])
-							if pkVal != "" {
-								break
-							}
-						}
-
-						for _, colIdx := range colIdxs {
-							if colIdx < len(currRow) {
-								strVal := strings.TrimSpace(currRow[colIdx])
-								if strVal != "" {
-									strVals = append(strVals, strVal)
-								}
-							}
-						}
-					}
-				}
-
-				if len(strVals) > 0 {
-					mergedStr := strings.Join(strVals, ",")
-					creator := NewDataCreator()
-					dVal, err := creator.CreateField(fieldType, mergedStr)
-					if err != nil {
-						fieldsData = append(fieldsData, datas.NewDString(mergedStr))
-					} else {
-						fieldsData = append(fieldsData, dVal)
-					}
-				} else {
-					fieldsData = append(fieldsData, nil)
-				}
-			}
-		} else {
-			for _, cell := range row {
-				fieldsData = append(fieldsData, datas.NewDString(strings.TrimSpace(cell)))
-			}
-		}
-
-		dBean := datas.NewDBean(t, implBeanType, fieldsData)
+		dBean := l.readBean(implBeanType, "", fieldIndices, i, primaryColIdx)
 		result = append(result, defs.NewRecord(dBean, l.rawUrl, nil))
 
 		// 计算 nextI
@@ -223,4 +162,104 @@ func (l *CsvDataLoader) ReadMulti(t *types.TBean) []*defs.Record {
 	}
 
 	return result
+}
+
+func (l *CsvDataLoader) readBean(beanType *types.TBean, prefix string, fieldIndices map[string][]int, rowIdx int, primaryColIdx int) *datas.DBean {
+	fieldsData := make([]datas.DType, 0)
+
+	beanImpl, ok := beanType.DefBean.(*defs.DefBeanImpl)
+	if !ok {
+		// Fallback
+		row := l.records[rowIdx]
+		for _, cell := range row {
+			fieldsData = append(fieldsData, datas.NewDString(strings.TrimSpace(cell)))
+		}
+		return datas.NewDBean(beanType, beanType, fieldsData)
+	}
+
+	for _, f := range beanImpl.HierarchyFields {
+		fieldName := f.Raw.Name
+		
+		searchName := fieldName
+		if prefix != "" {
+			searchName = prefix + "." + fieldName
+		}
+		
+		fieldType, _ := l.typeFactory.CreateType(f.Raw.Type)
+		if fieldType == nil {
+			fieldsData = append(fieldsData, nil)
+			continue
+		}
+
+		colIdxs, found := fieldIndices[searchName]
+		if !found {
+			if nestedBean, isBean := fieldType.(*types.TBean); isBean {
+				var implNestedBean = nestedBean
+				if nestedBean.IsDynamic() {
+					typeColName := searchName + ".$type"
+					if typeColIdxs, ok := fieldIndices[typeColName]; ok && len(typeColIdxs) > 0 {
+						typeColIdx := typeColIdxs[0]
+						currRow := l.records[rowIdx]
+						if typeColIdx < len(currRow) {
+							typeStr := strings.TrimSpace(currRow[typeColIdx])
+							if beanImpl, ok := nestedBean.DefBean.(*defs.DefBeanImpl); ok {
+								if childDef := beanImpl.TryGetChild(typeStr); childDef != nil {
+									implNestedBean = types.NewTBean(false, childDef, nil)
+								}
+							}
+						}
+					}
+				}
+				nestedData := l.readBean(implNestedBean, searchName, fieldIndices, rowIdx, primaryColIdx)
+				fieldsData = append(fieldsData, nestedData)
+				continue
+			}
+		}
+
+		var strVals []string
+		if found {
+			for r := rowIdx; r < len(l.records); r++ {
+				currRow := l.records[r]
+				
+				if len(currRow) > 0 {
+					fStr := strings.TrimSpace(currRow[0])
+					if strings.HasPrefix(fStr, "##") || strings.HasPrefix(fStr, "#") {
+						continue
+					}
+				}
+
+				if r > rowIdx && primaryColIdx >= 0 && primaryColIdx < len(currRow) {
+					pkVal := strings.TrimSpace(currRow[primaryColIdx])
+					if pkVal != "" {
+						break
+					}
+				}
+
+				for _, colIdx := range colIdxs {
+					if colIdx < len(currRow) {
+						strVal := strings.TrimSpace(currRow[colIdx])
+						if strVal != "" {
+							strVals = append(strVals, strVal)
+						}
+					}
+				}
+			}
+		}
+
+		if len(strVals) > 0 {
+			mergedStr := strings.Join(strVals, ",")
+			creator := NewDataCreator()
+			dVal, err := creator.CreateField(fieldType, mergedStr)
+			if err != nil {
+				fmt.Printf("Warning: failed to create data for field %s, err: %v\n", searchName, err)
+				fieldsData = append(fieldsData, datas.NewDString(mergedStr))
+			} else {
+				fieldsData = append(fieldsData, dVal)
+			}
+		} else {
+			fieldsData = append(fieldsData, nil)
+		}
+	}
+
+	return datas.NewDBean(beanType, beanType, fieldsData)
 }

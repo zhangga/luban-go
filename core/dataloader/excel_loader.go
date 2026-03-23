@@ -146,8 +146,6 @@ func (l *ExcelDataLoader) ReadMulti(t *types.TBean) []*defs.Record {
 			}
 
 			// 解析 TBean 字段
-			fieldsData := make([]datas.DType, 0)
-
 			var implBeanType *types.TBean = t
 
 			fmt.Printf("DEBUG resolving row %d for bean %s. IsDynamic: %v\n", i, t.DefBean.Name(), t.IsDynamic())
@@ -173,80 +171,7 @@ func (l *ExcelDataLoader) ReadMulti(t *types.TBean) []*defs.Record {
 				}
 			}
 
-			// 对于 TBean 的每一个字段进行遍历（按序填充）
-			if beanImpl, ok := implBeanType.DefBean.(*defs.DefBeanImpl); ok {
-				for _, f := range beanImpl.HierarchyFields {
-					fieldName := f.Raw.Name
-					colIdxs, found := fieldIndices[fieldName]
-					fmt.Printf("DEBUG field '%s' found=%v colIdxs=%v\n", fieldName, found, colIdxs)
-
-					// 解析多列合并（比如数组/列表）或者单列
-					fieldType, _ := l.typeFactory.CreateType(f.Raw.Type)
-					if fieldType == nil {
-						fieldsData = append(fieldsData, nil)
-						continue
-					}
-
-					var strVals []string
-					if found {
-						// 收集当前行以及后续属于同一条记录的行
-						for r := i; r < len(sheet.Cells); r++ {
-							currRow := sheet.Cells[r]
-							
-							// 跳过控制行
-							if len(currRow) > 0 {
-								firstCellStr := strings.TrimSpace(fmt.Sprintf("%v", currRow[0].Value))
-								if strings.HasPrefix(firstCellStr, "##") || strings.HasPrefix(firstCellStr, "#") {
-									continue
-								}
-							}
-
-							// 如果不是第一行，检查主键是否为空，如果不为空，说明是新记录，不能再继续收集
-							if r > i && primaryColIdx >= 0 && primaryColIdx < len(currRow) {
-								pkVal := strings.TrimSpace(fmt.Sprintf("%v", currRow[primaryColIdx].Value))
-								if pkVal != "" {
-									break // 遇到新记录，停止收集
-								}
-							}
-
-							for _, colIdx := range colIdxs {
-								if colIdx < len(currRow) {
-									cell := currRow[colIdx]
-									strVal := strings.TrimSpace(fmt.Sprintf("%v", cell.Value))
-									if strVal != "" {
-										strVals = append(strVals, strVal)
-									}
-								}
-							}
-						}
-					}
-
-					if len(strVals) > 0 {
-						// 拼装多列的值
-						// 简单处理：如果是集合类型且有多列，将它们用逗号连接起来交给 Creator 解析
-						mergedStr := strings.Join(strVals, ",")
-						
-						creator := NewDataCreator()
-						dVal, err := creator.CreateField(fieldType, mergedStr)
-						if err != nil {
-							fmt.Printf("Warning: failed to create data for field %s, err: %v\n", fieldName, err)
-							fieldsData = append(fieldsData, datas.NewDString(mergedStr)) // 兜底
-						} else {
-							fieldsData = append(fieldsData, dVal)
-						}
-					} else {
-						fieldsData = append(fieldsData, nil)
-					}
-				}
-			} else {
-				// Fallback：如果没有完整的元数据，把所有列加进去
-				for _, cell := range row {
-					strVal := fmt.Sprintf("%v", cell.Value)
-					fieldsData = append(fieldsData, datas.NewDString(strVal))
-				}
-			}
-
-			dBean := datas.NewDBean(t, implBeanType, fieldsData)
+			dBean := l.readBean(implBeanType, "", fieldIndices, sheet, i, primaryColIdx)
 			records = append(records, defs.NewRecord(dBean, l.rawUrl, nil))
 
 			// 计算跳过多少行（因为内部已经合并了后面的空主键行）
@@ -293,4 +218,116 @@ func (l *ExcelDataLoader) ReadMulti(t *types.TBean) []*defs.Record {
 	}
 
 	return records
+}
+
+func (l *ExcelDataLoader) readBean(beanType *types.TBean, prefix string, fieldIndices map[string][]int, sheet *RawSheet, rowIdx int, primaryColIdx int) *datas.DBean {
+	fieldsData := make([]datas.DType, 0)
+
+	beanImpl, ok := beanType.DefBean.(*defs.DefBeanImpl)
+	if !ok {
+		// Fallback
+		row := sheet.Cells[rowIdx]
+		for _, cell := range row {
+			strVal := fmt.Sprintf("%v", cell.Value)
+			fieldsData = append(fieldsData, datas.NewDString(strVal))
+		}
+		return datas.NewDBean(beanType, beanType, fieldsData)
+	}
+
+	for _, f := range beanImpl.HierarchyFields {
+		fieldName := f.Raw.Name
+		
+		// 构建嵌套层级名字，例如 A.B 或者直接是 fieldName
+		searchName := fieldName
+		if prefix != "" {
+			searchName = prefix + "." + fieldName
+		}
+		
+		fieldType, _ := l.typeFactory.CreateType(f.Raw.Type)
+		if fieldType == nil {
+			fieldsData = append(fieldsData, nil)
+			continue
+		}
+
+		// 检查这是否是一个内部的 TBean。如果是，我们需要递归地去解析它。
+		// 前提是：列里面没有直接对应的整体列（或者这是一个纯结构体展开的情况）
+		colIdxs, found := fieldIndices[searchName]
+		if !found {
+			// 尝试把它当做嵌套 Bean 来展开解析
+			if nestedBean, isBean := fieldType.(*types.TBean); isBean {
+				var implNestedBean = nestedBean
+				// 支持嵌套多态展开
+				if nestedBean.IsDynamic() {
+					typeColName := searchName + ".$type"
+					if typeColIdxs, ok := fieldIndices[typeColName]; ok && len(typeColIdxs) > 0 {
+						typeColIdx := typeColIdxs[0]
+						currRow := sheet.Cells[rowIdx]
+						if typeColIdx < len(currRow) {
+							typeStr := strings.TrimSpace(fmt.Sprintf("%v", currRow[typeColIdx].Value))
+							if beanImpl, ok := nestedBean.DefBean.(*defs.DefBeanImpl); ok {
+								if childDef := beanImpl.TryGetChild(typeStr); childDef != nil {
+									implNestedBean = types.NewTBean(false, childDef, nil)
+								}
+							}
+						}
+					}
+				}
+				nestedData := l.readBean(implNestedBean, searchName, fieldIndices, sheet, rowIdx, primaryColIdx)
+				fieldsData = append(fieldsData, nestedData)
+				continue
+			}
+		}
+
+		// 如果找到了直接映射列，或者这是个基础类型/列表（就算没有也会填充nil）
+		var strVals []string
+		if found {
+			// 收集当前行以及后续属于同一条记录的行
+			for r := rowIdx; r < len(sheet.Cells); r++ {
+				currRow := sheet.Cells[r]
+				
+				// 跳过控制行
+				if len(currRow) > 0 {
+					firstCellStr := strings.TrimSpace(fmt.Sprintf("%v", currRow[0].Value))
+					if strings.HasPrefix(firstCellStr, "##") || strings.HasPrefix(firstCellStr, "#") {
+						continue
+					}
+				}
+
+				// 如果不是第一行，检查主键是否为空，如果不为空，说明是新记录，不能再继续收集
+				if r > rowIdx && primaryColIdx >= 0 && primaryColIdx < len(currRow) {
+					pkVal := strings.TrimSpace(fmt.Sprintf("%v", currRow[primaryColIdx].Value))
+					if pkVal != "" {
+						break // 遇到新记录，停止收集
+					}
+				}
+
+				for _, colIdx := range colIdxs {
+					if colIdx < len(currRow) {
+						cell := currRow[colIdx]
+						strVal := strings.TrimSpace(fmt.Sprintf("%v", cell.Value))
+						if strVal != "" {
+							strVals = append(strVals, strVal)
+						}
+					}
+				}
+			}
+		}
+
+		if len(strVals) > 0 {
+			// 拼装多列的值
+			mergedStr := strings.Join(strVals, ",")
+			creator := NewDataCreator()
+			dVal, err := creator.CreateField(fieldType, mergedStr)
+			if err != nil {
+				fmt.Printf("Warning: failed to create data for field %s, err: %v\n", searchName, err)
+				fieldsData = append(fieldsData, datas.NewDString(mergedStr)) // 兜底
+			} else {
+				fieldsData = append(fieldsData, dVal)
+			}
+		} else {
+			fieldsData = append(fieldsData, nil)
+		}
+	}
+
+	return datas.NewDBean(beanType, beanType, fieldsData)
 }
