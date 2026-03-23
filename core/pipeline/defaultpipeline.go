@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/zhangga/luban-go/core/codetarget"
 	"github.com/zhangga/luban-go/core/dataloader"
@@ -57,99 +58,131 @@ func (p *DefaultPipeline) Process(args *PipelineArguments) error {
 
 	// 3. 读取数据 (DataLoader)
 	fmt.Println("Step 3: Load data...")
-	// 这里真实项目中要通过 DataLoaderManager 加载
-	// DataLoader 应该遍历 assembly.ExportTables 获取对应的数据
 	tableRecordsMap := make(map[string][]*defs.Record)
 	typeFactory := defs.NewTTypeFactory(assembly)
+	
+	// 使用 sync.Map 和 sync.WaitGroup 实现并发加载
+	var wg sync.WaitGroup
+	var mapMutex sync.Mutex
+	errChan := make(chan error, len(assembly.ExportTables))
 
 	for _, table := range assembly.ExportTables {
-		// 收集表对应的数据文件
-		var inputFiles []string
-		if len(table.Raw.InputFiles) > 0 {
-			inputFiles = table.Raw.InputFiles
-		} else {
-			inputFiles = []string{table.Name()}
-		}
-
-		var allRecords []*defs.Record
-		for _, rawPattern := range inputFiles {
-			// 支持 filename.xlsx@sheetName 语法
-			filePattern := rawPattern
-			subAsset := ""
-			if idx := strings.LastIndex(rawPattern, "@"); idx != -1 {
-				filePattern = rawPattern[:idx]
-				subAsset = rawPattern[idx+1:]
+		wg.Add(1)
+		go func(table *defs.DefTable) {
+			defer wg.Done()
+			
+			// 收集表对应的数据文件
+			var inputFiles []string
+			if len(table.Raw.InputFiles) > 0 {
+				inputFiles = table.Raw.InputFiles
+			} else {
+				inputFiles = []string{table.Name()}
 			}
 
-			// 支持统配符和目录读取
-			fullPattern := filepath.Join(args.InputDataDir, "Datas", filePattern)
-
-			// 如果没有扩展名，我们默认尝试匹配 .xlsx 和 .csv
-			if filepath.Ext(fullPattern) == "" {
-				fullPattern += ".*"
-			}
-
-			matches, err := filepath.Glob(fullPattern)
-			if err != nil {
-				fmt.Printf("Warning: failed to glob pattern %s: %v\n", fullPattern, err)
-				continue
-			}
-
-			if len(matches) == 0 {
-				// 如果直接匹配不到，尝试加扩展名
-				matchesXlsx, _ := filepath.Glob(filepath.Join(args.InputDataDir, "Datas", filePattern+".xlsx"))
-				matchesCsv, _ := filepath.Glob(filepath.Join(args.InputDataDir, "Datas", filePattern+".csv"))
-				matches = append(matches, matchesXlsx...)
-				matches = append(matches, matchesCsv...)
-			}
-
-			for _, matchPath := range matches {
-				// 排除临时文件，比如 ~$xxxx.xlsx
-				if strings.HasPrefix(filepath.Base(matchPath), "~$") {
-					continue
+			var allRecords []*defs.Record
+			for _, rawPattern := range inputFiles {
+				// 支持 filename.xlsx@sheetName 语法
+				filePattern := rawPattern
+				subAsset := ""
+				if idx := strings.LastIndex(rawPattern, "@"); idx != -1 {
+					filePattern = rawPattern[:idx]
+					subAsset = rawPattern[idx+1:]
 				}
 
-				f, err := os.Open(matchPath)
+				// 支持统配符和目录读取
+				fullPattern := filepath.Join(args.InputDataDir, "Datas", filePattern)
+
+				// 如果没有扩展名，我们默认尝试匹配 .xlsx 和 .csv 等
+				if filepath.Ext(fullPattern) == "" {
+					fullPattern += ".*"
+				}
+
+				matches, err := filepath.Glob(fullPattern)
 				if err != nil {
-					fmt.Printf("Warning: failed to open file %s: %v\n", matchPath, err)
+					fmt.Printf("Warning: failed to glob pattern %s: %v\n", fullPattern, err)
 					continue
 				}
 
-				var loader dataloader.IDataLoader
-				ext := strings.ToLower(filepath.Ext(matchPath))
-				if ext == ".xlsx" || ext == ".xlsm" || ext == ".xls" {
-					loader = dataloader.NewExcelDataLoader(typeFactory)
-				} else if ext == ".csv" {
-					loader = dataloader.NewCsvDataLoader(typeFactory)
+				if len(matches) == 0 {
+					// 如果直接匹配不到，尝试加扩展名
+					matchesXlsx, _ := filepath.Glob(filepath.Join(args.InputDataDir, "Datas", filePattern+".xlsx"))
+					matchesCsv, _ := filepath.Glob(filepath.Join(args.InputDataDir, "Datas", filePattern+".csv"))
+					matchesJson, _ := filepath.Glob(filepath.Join(args.InputDataDir, "Datas", filePattern+".json"))
+					matchesYaml, _ := filepath.Glob(filepath.Join(args.InputDataDir, "Datas", filePattern+".yml"))
+					matchesYaml2, _ := filepath.Glob(filepath.Join(args.InputDataDir, "Datas", filePattern+".yaml"))
+					
+					matches = append(matches, matchesXlsx...)
+					matches = append(matches, matchesCsv...)
+					matches = append(matches, matchesJson...)
+					matches = append(matches, matchesYaml...)
+					matches = append(matches, matchesYaml2...)
 				}
 
-				if loader != nil {
-					fmt.Printf("Loading data for table %s from %s (sheet: %s)\n", table.Name(), matchPath, subAsset)
-
-					if err := loader.Load(matchPath, subAsset, f); err == nil {
-						tType, errType := typeFactory.CreateType(table.Raw.ValueType)
-						if errType != nil {
-							fmt.Printf("Failed to create type for %s: %v\n", table.Raw.ValueType, errType)
-						} else if beanType, ok := tType.(*types.TBean); ok {
-							records := loader.ReadMulti(beanType)
-							allRecords = append(allRecords, records...)
-							fmt.Printf("Loaded %d records from %s\n", len(records), matchPath)
-						} else {
-							fmt.Printf("Type %s is not a bean type, it is %s\n", table.Raw.ValueType, tType.TypeName())
-						}
-					} else {
-						fmt.Printf("Failed to parse file %s: %v\n", matchPath, err)
+				for _, matchPath := range matches {
+					// 排除临时文件，比如 ~$xxxx.xlsx
+					if strings.HasPrefix(filepath.Base(matchPath), "~$") {
+						continue
 					}
-				}
-				f.Close()
-			}
-		}
 
-		if len(allRecords) > 0 {
-			tableRecordsMap[table.FullName()] = allRecords
-			fmt.Printf("Total loaded %d records for table %s\n", len(allRecords), table.Name())
-		} else {
-			fmt.Printf("No data found for table %s\n", table.Name())
+					f, err := os.Open(matchPath)
+					if err != nil {
+						fmt.Printf("Warning: failed to open file %s: %v\n", matchPath, err)
+						continue
+					}
+
+					var loader dataloader.IDataLoader
+					ext := strings.ToLower(filepath.Ext(matchPath))
+					if ext == ".xlsx" || ext == ".xlsm" || ext == ".xls" {
+						loader = dataloader.NewExcelDataLoader(typeFactory)
+					} else if ext == ".csv" {
+						loader = dataloader.NewCsvDataLoader(typeFactory)
+					} else if ext == ".json" {
+						loader = dataloader.NewJsonDataLoader(typeFactory)
+					} else if ext == ".yml" || ext == ".yaml" {
+						loader = dataloader.NewYamlDataLoader(typeFactory)
+					}
+
+					if loader != nil {
+						fmt.Printf("Loading data for table %s from %s (sheet: %s)\n", table.Name(), matchPath, subAsset)
+
+						if err := loader.Load(matchPath, subAsset, f); err == nil {
+							tType, errType := typeFactory.CreateType(table.Raw.ValueType)
+							if errType != nil {
+								errChan <- fmt.Errorf("failed to create type for %s: %v", table.Raw.ValueType, errType)
+							} else if beanType, ok := tType.(*types.TBean); ok {
+								records := loader.ReadMulti(beanType)
+								allRecords = append(allRecords, records...)
+								fmt.Printf("Loaded %d records from %s\n", len(records), matchPath)
+							} else {
+								errChan <- fmt.Errorf("type %s is not a bean type, it is %s", table.Raw.ValueType, tType.TypeName())
+							}
+						} else {
+							errChan <- fmt.Errorf("failed to parse file %s: %v", matchPath, err)
+						}
+					}
+					f.Close()
+				}
+			}
+
+			if len(allRecords) > 0 {
+				mapMutex.Lock()
+				tableRecordsMap[table.FullName()] = allRecords
+				mapMutex.Unlock()
+				fmt.Printf("Total loaded %d records for table %s\n", len(allRecords), table.Name())
+			} else {
+				fmt.Printf("No data found for table %s\n", table.Name())
+			}
+		}(table)
+	}
+
+	wg.Wait()
+	close(errChan)
+
+	// 检查是否有加载错误
+	for err := range errChan {
+		if err != nil {
+			fmt.Printf("Error during loading: %v\n", err)
+			// return err 视情况决定是否中断
 		}
 	}
 

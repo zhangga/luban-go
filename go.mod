@@ -2,7 +2,10 @@ module github.com/zhangga/luban-go
 
 go 1.25.5
 
-require github.com/xuri/excelize/v2 v2.10.1
+require (
+	github.com/xuri/excelize/v2 v2.10.1
+	gopkg.in/yaml.v3 v3.0.1
+)
 
 require (
 	github.com/richardlehane/mscfb v1.0.6 // indirect
